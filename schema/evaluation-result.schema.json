@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvaluationResult",
+  "type": "object",
+  "required": ["evaluation_id", "timestamp", "evaluation_type", "scores", "risk_level", "recommendation", "reason", "violations"],
+  "properties": {
+    "evaluation_id": {"type": "string"},
+    "timestamp": {"type": "string"},
+    "evaluation_type": {"enum": ["goal", "instruction", "tool", "memory", "final"]},
+    "scores": {"type": "object", "additionalProperties": {"type": "number"}},
+    "risk_level": {"enum": ["low", "medium", "high", "critical"]},
+    "recommendation": {"enum": ["continue", "revise", "ask_user", "stop", "store_memory", "skip_memory"]},
+    "reason": {"type": "string"},
+    "violations": {"type": "array", "items": {"type": "string"}}
+  }
+}

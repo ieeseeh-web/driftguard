@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvaluationRequest",
+  "type": "object",
+  "required": ["evaluation_type"],
+  "properties": {
+    "evaluation_type": {"enum": ["goal", "instruction", "tool", "memory", "final"]},
+    "user_request": {"type": "string"},
+    "agent_output": {"type": "string"},
+    "agent_plan": {"type": ["string", "null"]},
+    "current_goal": {"type": ["string", "null"]},
+    "constraints": {"type": "array", "items": {"type": "string"}},
+    "explicit_instructions": {"type": "array", "items": {"type": "string"}},
+    "tool_name": {"type": ["string", "null"]},
+    "tool_args": {"type": "object"},
+    "expected_side_effects": {"type": "array", "items": {"type": "string"}},
+    "candidate_memory": {"type": ["string", "null"]},
+    "source_message": {"type": ["string", "null"]},
+    "existing_memories": {"type": "array", "items": {"type": "string"}},
+    "user_explicitly_asked_to_remember": {"type": "boolean"},
+    "agent_state": {"type": "object"}
+  },
+  "additionalProperties": true
+}

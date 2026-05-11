@@ -1,0 +1,6 @@
+{
+  "evaluation_type": "goal",
+  "user_request": "Agent Drift와 LLM as a Judge에 대한 PRD를 작성해주세요.",
+  "agent_output": "Agent Drift 대응을 위한 LLM as a Judge 기반 PRD를 작성했습니다. 목표, 기능 요구사항, 아키텍처, 운영 지표를 포함합니다.",
+  "constraints": ["PRD"]
+}
