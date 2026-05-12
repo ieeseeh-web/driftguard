@@ -23,6 +23,8 @@
 | A-011 | done | 4 | 테스트 케이스 추가 | agent review 테스트 3개 추가 |
 | A-012 | done | 3 | Agent Review JSONL 로그 저장 옵션 추가 | `review-agent --log` 구현 및 로그 파싱 확인 |
 | A-013 | done | 3 | Handoff / execution_log 샘플 추가 | 샘플 2개와 평가 로직/테스트 추가 |
+| A-014 | done | 2 | Agent Architecture 문서 작성 | `agent/ARCHITECTURE.md` 작성 |
+| A-015 | done | 2 | 발표용 PPT 내용 정리 | `agent/PRESENTATION.md` 작성 |
 
 ## Backlog
 - PR/코드리뷰용 Drift 평가 모드

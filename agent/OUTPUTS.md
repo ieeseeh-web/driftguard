@@ -7,6 +7,7 @@
 | 2026-05-12 | Agent Review 스키마/프롬프트/샘플 작성 | request/result JSON Schema, DriftGuard Agent 프롬프트, 샘플 3종 생성 | JSON 파싱 확인 및 기존 unittest 8개 통과 |
 | 2026-05-12 | `review-agent` CLI 구현 | `src/driftguard/agent_review.py`, CLI subcommand, 테스트 3개, README 사용법 추가 | 샘플 CLI 실행 확인 및 unittest 11개 통과 |
 | 2026-05-12 | JSONL 로그와 handoff/execution_log 평가 강화 | `review-agent --log`, 샘플 2종, 위험 로그/handoff 감지 로직, 테스트 2개 추가 | JSON 파싱, 로그 1줄 저장/파싱, unittest 13개 통과 |
+| 2026-05-12 | Agent 아키텍처와 발표용 문서 작성 | `agent/ARCHITECTURE.md`, `agent/PRESENTATION.md` 작성 | 문서 라인 수 확인 및 unittest 13개 통과 |
 
 ## Decisions
 - 기존 “LLM as a Judge 평가 시스템” 방향은 유지하되, 이번 개발 단위는 독립적인 **DriftGuard Agent**로 정의한다.
@@ -21,6 +22,8 @@
 - `agent/TASKS.md`
 - `agent/RUNBOOK.md`
 - `agent/OUTPUTS.md`
+- `agent/ARCHITECTURE.md`
+- `agent/PRESENTATION.md`
 - `agent/memory/`
 - `agent/templates/`
 - `schema/agent-review-request.schema.json`
