@@ -8,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .agent_review import AgentReviewRequest, result_to_dict, result_to_markdown, review_agent
+from .api import DEFAULT_API_PORT, run_server
 from .audit import append_jsonl, build_agent_review_audit_record
 from .evaluator import evaluate
 from .logger import append_log
@@ -55,6 +56,11 @@ def cmd_review_agent(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    run_server(host=args.host, port=args.port)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="driftguard", description="Agent Drift evaluation CLI")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -77,6 +83,11 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser.add_argument("--log", default=None, help="Optional full Agent Review JSONL log path")
     review_parser.add_argument("--audit-log", default=None, help="Optional compact observability/audit JSONL log path")
     review_parser.set_defaults(func=cmd_review_agent)
+
+    serve_parser = sub.add_parser("serve", help="Run the DriftGuard backend API server")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Bind host")
+    serve_parser.add_argument("--port", type=int, default=DEFAULT_API_PORT, help="Bind port")
+    serve_parser.set_defaults(func=cmd_serve)
     return parser
 
 

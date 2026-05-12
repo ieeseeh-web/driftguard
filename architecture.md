@@ -2,9 +2,9 @@
 
 ## 1. 개요
 
-DriftGuard는 AI 에이전트 런타임과 Judge Layer 사이에 위치하는 평가/가드레일 시스템이다.
+DriftGuard는 AI 에이전트 런타임과 Judge Layer 사이에 위치하는 백엔드 API 기반 평가/가드레일 시스템이다.
 
-에이전트가 계획을 세우거나, 도구를 호출하거나, 메모리를 업데이트하거나, 최종 응답을 제출하기 전에 DriftGuard가 평가를 수행한다.
+에이전트가 계획을 세우거나, 도구를 호출하거나, 메모리를 업데이트하거나, 최종 응답을 제출하기 전에 DriftGuard API가 평가를 수행한다.
 
 ---
 
@@ -14,7 +14,8 @@ DriftGuard는 AI 에이전트 런타임과 Judge Layer 사이에 위치하는 �
 flowchart TD
     U[User Request] --> A[Agent Runtime]
     A --> P[Agent Plan]
-    P --> J1[Judge Layer: Goal & Role Evaluation]
+    P --> API[DriftGuard Backend API]
+    API --> J1[Judge Layer: Goal & Role Evaluation]
     J1 --> PE1[Policy Engine]
 
     PE1 -->|continue| E[Agent Execution]
@@ -24,7 +25,8 @@ flowchart TD
 
     E --> T{Tool Call?}
     T -->|yes| TG[Tool Guard]
-    TG --> J2[Judge Layer: Tool Risk Evaluation]
+    TG --> API
+    API --> J2[Judge Layer: Tool Risk Evaluation]
     J2 --> PE2[Policy Engine]
     PE2 -->|approved| TR[Tool Runtime]
     PE2 -->|ask_user| H
@@ -32,7 +34,8 @@ flowchart TD
 
     E --> M{Memory Update?}
     M -->|yes| MG[Memory Guard]
-    MG --> J3[Judge Layer: Memory Risk Evaluation]
+    MG --> API
+    API --> J3[Judge Layer: Memory Risk Evaluation]
     J3 --> PE3[Policy Engine]
     PE3 -->|store| MS[Memory Store]
     PE3 -->|do_not_store| NMS[Skip Memory Update]
@@ -42,7 +45,8 @@ flowchart TD
     NMS --> F
     E --> F
 
-    F --> J4[Judge Layer: Final Evaluation]
+    F --> API
+    API --> J4[Judge Layer: Final Evaluation]
     J4 --> PE4[Policy Engine]
     PE4 -->|continue| R[Final Response]
     PE4 -->|revise| A
@@ -63,7 +67,26 @@ flowchart TD
 
 ## 3. 컴포넌트 설명
 
-### 3.1 Agent Runtime
+### 3.1 DriftGuard Backend API
+
+에이전트 런타임이 HTTP로 호출하는 API 레이어다.
+
+엔드포인트:
+
+- `GET /health`
+- `POST /v1/evaluations`
+- `POST /v1/agent-reviews`
+
+책임:
+
+- JSON 요청 파싱 및 검증
+- 평가/리뷰 도메인 로직 호출
+- JSON 응답 반환
+- 선택적 JSONL 평가 로그 및 감사 로그 저장
+
+---
+
+### 3.2 Agent Runtime
 
 사용자 요청을 받아 계획을 수립하고 실행하는 본체다.
 
@@ -76,7 +99,7 @@ flowchart TD
 
 ---
 
-### 3.2 Judge Layer
+### 3.3 Judge Layer
 
 LLM as a Judge를 사용하여 에이전트의 행동과 산출물을 평가한다.
 
@@ -91,7 +114,7 @@ LLM as a Judge를 사용하여 에이전트의 행동과 산출물을 평가한�
 
 ---
 
-### 3.3 Policy Engine
+### 3.4 Policy Engine
 
 Judge의 평가 결과를 받아 다음 행동을 결정한다.
 
@@ -106,7 +129,7 @@ Judge의 평가 결과를 받아 다음 행동을 결정한다.
 
 ---
 
-### 3.4 Tool Guard
+### 3.5 Tool Guard
 
 도구 호출 전후에 위험도를 평가한다.
 
@@ -119,7 +142,7 @@ Judge의 평가 결과를 받아 다음 행동을 결정한다.
 
 ---
 
-### 3.5 Memory Guard
+### 3.6 Memory Guard
 
 장기 메모리 업데이트 전에 저장 적합성을 평가한다.
 
@@ -132,7 +155,7 @@ Judge의 평가 결과를 받아 다음 행동을 결정한다.
 
 ---
 
-### 3.6 Evaluation Log
+### 3.7 Evaluation Log
 
 평가와 정책 결정의 감사 추적을 제공한다.
 
@@ -154,7 +177,7 @@ Judge의 평가 결과를 받아 다음 행동을 결정한다.
 sequenceDiagram
     participant User
     participant Agent
-    participant DriftGuard
+    participant DriftGuardAPI
     participant Judge
     participant Policy
     participant Tool
@@ -162,22 +185,22 @@ sequenceDiagram
 
     User->>Agent: 작업 요청
     Agent->>Agent: 계획 수립
-    Agent->>DriftGuard: 도구 호출 검증 요청
-    DriftGuard->>Judge: Tool Risk 평가
-    Judge-->>DriftGuard: risk score + reason
-    DriftGuard->>Policy: 대응 결정 요청
-    Policy-->>DriftGuard: continue / ask_user / stop
-    DriftGuard->>Log: 평가 결과 저장
+    Agent->>DriftGuardAPI: POST /v1/agent-reviews
+    DriftGuardAPI->>Judge: Tool Risk 평가
+    Judge-->>DriftGuardAPI: risk score + reason
+    DriftGuardAPI->>Policy: 대응 결정 요청
+    Policy-->>DriftGuardAPI: continue / ask_user / stop
+    DriftGuardAPI->>Log: 평가 결과 저장
 
     alt continue
-        DriftGuard-->>Agent: 도구 호출 승인
+        DriftGuardAPI-->>Agent: 도구 호출 승인
         Agent->>Tool: 도구 실행
         Tool-->>Agent: 실행 결과
     else ask_user
-        DriftGuard-->>Agent: 사용자 확인 필요
+        DriftGuardAPI-->>Agent: 사용자 확인 필요
         Agent-->>User: 확인 요청
     else stop
-        DriftGuard-->>Agent: 작업 중단
+        DriftGuardAPI-->>Agent: 작업 중단
     end
 ```
 
@@ -252,7 +275,7 @@ DriftGuard를 별도 API 서버로 운영한다.
 
 ### 6.3 권장 MVP
 
-초기 MVP는 **라이브러리 형태**로 구현하고, 이후 사이드카 서비스로 확장하는 방식을 권장한다.
+현재 MVP는 **백엔드 API 형태**로 구현한다. 에이전트 런타임은 HTTP로 DriftGuard를 호출하고, DriftGuard는 평가 결과와 정책 추천을 JSON으로 반환한다. CLI는 로컬 개발과 배치 검증을 위한 보조 인터페이스로 유지한다.
 
 ---
 

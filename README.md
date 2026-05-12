@@ -122,9 +122,74 @@ Continue / Revise / Ask User / Stop
 5. 에이전트 런타임 연동
 ---
 
-## 9. MVP CLI 사용법
+## 9. 백엔드 API 사용법
 
-현재 MVP는 표준 라이브러리만 사용하는 Python CLI로 구현되어 있습니다.
+현재 MVP는 표준 라이브러리만 사용하는 Python 백엔드 API로 실행할 수 있습니다.
+
+```bash
+# API 서버 실행
+./bin/driftguard serve --host 127.0.0.1 --port 17321
+```
+
+헬스 체크:
+
+```bash
+curl http://127.0.0.1:17321/health
+```
+
+Swagger UI:
+
+```bash
+open http://127.0.0.1:17321/docs
+```
+
+OpenAPI JSON:
+
+```bash
+curl http://127.0.0.1:17321/openapi.json
+```
+
+Goal/Tool/Memory/Final 평가:
+
+```bash
+curl -X POST http://127.0.0.1:17321/v1/evaluations \
+  -H "Content-Type: application/json" \
+  -d @examples/goal-ok.json
+```
+
+Agent Review 평가:
+
+```bash
+curl -X POST "http://127.0.0.1:17321/v1/agent-reviews?mode=deterministic" \
+  -H "Content-Type: application/json" \
+  -d @examples/agent-review-tool-call.json
+```
+
+로그 저장이 필요하면 쿼리 파라미터 또는 환경변수를 사용할 수 있습니다.
+
+```bash
+curl -X POST "http://127.0.0.1:17321/v1/evaluations?log=logs/evaluations.jsonl" \
+  -H "Content-Type: application/json" \
+  -d @examples/tool-risky.json
+
+DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
+```
+
+지원 엔드포인트:
+
+| Method | Path | 설명 |
+|---|---|---|
+| `GET` | `/health` | 서버 상태 및 엔드포인트 목록 |
+| `GET` | `/docs` | Swagger UI |
+| `GET` | `/openapi.json` | OpenAPI 3.0 스펙 |
+| `POST` | `/v1/evaluations` | 기존 Goal/Instruction/Tool/Memory/Final 평가 |
+| `POST` | `/v1/agent-reviews` | Agent 방식 Drift 리뷰 |
+
+---
+
+## 10. CLI 사용법
+
+API 서버 외에도 기존 CLI 실행을 유지합니다.
 
 ```bash
 # Goal 평가
@@ -161,18 +226,18 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 ---
 
-## 10. 구현 구조
+## 11. 구현 구조
 
 | 경로 | 설명 |
 |---|---|
 | `src/driftguard/models.py` | 평가 요청/결과 데이터 모델 |
 | `src/driftguard/evaluator.py` | Goal/Tool/Memory/Final 평가 로직 |
 | `src/driftguard/agent_review.py` | Agent 방식 Drift 리뷰와 Markdown/JSON 리포트 생성 |
+| `src/driftguard/api.py` | 표준 라이브러리 기반 HTTP 백엔드 API |
 | `src/driftguard/policy.py` | Drift Score 및 대응 정책 |
 | `src/driftguard/logger.py` | JSONL 평가 로그 저장 |
-| `src/driftguard/cli.py` | CLI 엔트리포인트 |
+| `src/driftguard/cli.py` | CLI 및 API 서버 실행 엔트리포인트 |
 | `schema/` | 요청/응답 JSON Schema |
 | `prompts/` | 향후 LLM Judge 연동용 프롬프트 초안 |
 | `examples/` | 샘플 평가 입력 |
 | `tests/` | unittest 기반 테스트 |
-
