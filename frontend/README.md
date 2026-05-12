@@ -29,6 +29,23 @@ open http://127.0.0.1:5173
 화면 왼쪽 `Registered Agent` 영역에서 등록된 에이전트, 시나리오, drift 유형을 선택한 뒤 `Run Agent`를 누르면 백엔드가 해당 에이전트를 실행합니다.
 상단의 `Agent Registry` 페이지에서는 연결 가능한 Python 모듈 에이전트를 화면에서 바로 등록할 수 있습니다.
 
+## Console 화면
+
+`Console` 화면은 백엔드 API를 빠르게 호출하고 결과를 확인하는 작업 화면입니다.
+
+| 기능 | 설명 |
+|---|---|
+| `Mode` | `Agent Review`와 `Evaluation` 요청 유형 전환 |
+| `Sample` | 요청 편집기에 넣을 예제 JSON 선택 |
+| `Load` | 선택한 샘플 JSON을 요청 편집기에 불러오기 |
+| `Format` | 요청 편집기의 JSON을 들여쓰기 형식으로 정리 |
+| `Run` | 현재 요청 편집기의 JSON을 백엔드 API로 전송 |
+| `Registered Agent` | 등록된 에이전트, 시나리오, drift mode를 선택해 실행 |
+
+결과 패널은 Drift Score, 위험도, 추천 대응, 사용자 확인 필요 여부, 요약, 원본 JSON을 표시합니다.
+
+## Agent Registry 화면
+
 등록 페이지는 다음 정보를 분리해서 입력합니다.
 
 | 분류 | 입력 내용 |

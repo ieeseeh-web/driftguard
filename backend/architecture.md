@@ -6,6 +6,12 @@ DriftGuard는 AI 에이전트 런타임과 Judge Layer 사이에 위치하는 �
 
 에이전트가 계획을 세우거나, 도구를 호출하거나, 메모리를 업데이트하거나, 최종 응답을 제출하기 전에 DriftGuard API가 평가를 수행한다.
 
+현재 구현은 다음 세 가지 실행 경로를 제공한다.
+
+- HTTP API: Agent Review, Evaluation, 등록 에이전트 실행/등록
+- CLI: 로컬 JSON 입력 기반 평가 및 Agent Review
+- Frontend Console: 샘플 요청 실행, 등록 에이전트 실행, Agent Registry 관리
+
 ---
 
 ## 2. 논리 아키텍처
@@ -63,6 +69,23 @@ flowchart TD
     PE4 --> L
 ```
 
+등록 에이전트 실행 흐름:
+
+```mermaid
+flowchart TD
+    UI[Frontend Console] -->|GET /v1/agents| AR[Agent Registry]
+    UI -->|POST /v1/agents| AR
+    UI -->|POST /v1/agent-runs| API[DriftGuard Backend API]
+    API --> AR
+    AR --> CFG[Agent Runtime Config]
+    API --> PROC[Python Module Agent Process]
+    PROC --> OUT[Agent Result JSON]
+    PROC --> REQ[DriftGuard Review Request JSON]
+    REQ --> REVIEW[Agent Review Engine]
+    REVIEW --> POLICY[Policy Engine]
+    POLICY --> UI
+```
+
 ---
 
 ## 3. 컴포넌트 설명
@@ -74,13 +97,21 @@ flowchart TD
 엔드포인트:
 
 - `GET /health`
+- `GET /docs`
+- `GET /openapi.json`
+- `GET /v1/agents`
+- `POST /v1/agents`
+- `POST /v1/agent-runs`
 - `POST /v1/evaluations`
 - `POST /v1/agent-reviews`
+- `POST /v1/sample-agent/runs` 호환용
 
 책임:
 
 - JSON 요청 파싱 및 검증
 - 평가/리뷰 도메인 로직 호출
+- 에이전트 레지스트리 조회/등록/갱신
+- 등록된 Python 모듈 에이전트 실행
 - JSON 응답 반환
 - 선택적 JSONL 평가 로그 및 감사 로그 저장
 
@@ -171,6 +202,43 @@ Judge의 평가 결과를 받아 다음 행동을 결정한다.
 
 ---
 
+### 3.8 Agent Registry
+
+실행 가능한 외부/샘플 에이전트의 연결 정보를 저장한다.
+
+기본 저장 위치:
+
+```text
+backend/agents/registry.json
+```
+
+환경변수 `DRIFTGUARD_AGENT_REGISTRY`로 저장 위치를 바꿀 수 있다.
+
+레지스트리 항목:
+
+- `id`: UI와 API에서 사용하는 고유 식별자
+- `name`, `description`: 화면 표시 정보
+- `runtime`: 현재 `python_module` 지원
+- `working_directory`: backend 기준 상대 작업 폴더
+- `python`: 작업 폴더 기준 Python 실행 파일
+- `module`: `python -m`으로 실행할 모듈
+- `scenarios`: 실행 가능한 시나리오 입력 JSON 목록
+- `drift_modes`: `none`, `goal`, `tool`, `memory`, `handoff`
+
+---
+
+### 3.9 Frontend Console
+
+정적 HTML/CSS/JS 기반 콘솔이다.
+
+화면:
+
+- `Console`: 샘플 요청 실행, 등록 에이전트 실행, 결과 요약/JSON 확인
+- `Agent Registry`: 에이전트 등록, 샘플/템플릿 표시, 연동 요구사항 안내
+- `Swagger`: 백엔드 OpenAPI 문서 연결
+
+---
+
 ## 4. 시퀀스 다이어그램: 도구 호출 검증
 
 ```mermaid
@@ -237,6 +305,36 @@ sequenceDiagram
   "recommendation": "continue | revise | ask_user | stop",
   "reason": "string",
   "violations": ["string"]
+}
+```
+
+### 5.3 AgentRegistrationRequest
+
+```json
+{
+  "id": "custom-agent",
+  "name": "Custom Agent",
+  "description": "Runnable Python module agent",
+  "runtime": "python_module",
+  "working_directory": "sample_agent",
+  "python": ".venv/bin/python",
+  "module": "sample_agent.travel_agent",
+  "scenarios": [
+    {"id": "demo", "label": "Demo", "input": "scenarios/seoul_weekend.json"}
+  ],
+  "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
+}
+```
+
+### 5.4 RegisteredAgentRunRequest
+
+```json
+{
+  "agent_id": "sample-travel-assistant",
+  "scenario": "seoul_weekend",
+  "drift_mode": "tool",
+  "judge_mode": "deterministic",
+  "timeout_seconds": 20
 }
 ```
 

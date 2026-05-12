@@ -20,8 +20,11 @@ DriftGuard는 AI 에이전트의 계획, 응답, 도구 호출, 메모리 업데
 | F-006 | Drift Score 산출 | P0 | 포함 |
 | F-007 | Policy Engine | P0 | 포함 |
 | F-008 | Evaluation Log 저장 | P0 | 포함 |
-| F-009 | Multi-Agent Drift 평가 | P2 | 제외 |
-| F-010 | 운영 대시보드 | P2 | 제외 |
+| F-009 | Agent Review API | P0 | 포함 |
+| F-010 | 등록 에이전트 실행 | P1 | 포함 |
+| F-011 | Agent Registry UI | P1 | 포함 |
+| F-012 | Multi-Agent Drift 평가 | P2 | 부분 포함 |
+| F-013 | 운영 대시보드 | P2 | 제외 |
 
 ---
 
@@ -248,7 +251,120 @@ Drift Score 및 개별 평가 결과에 따라 에이전트의 다음 행동을 
 
 ---
 
-## 10. 에러 처리
+## 10. F-009 Agent Review API
+
+### 목적
+
+도구 호출, 최종 응답, 메모리 업데이트, handoff, 실행 로그 등 에이전트 산출물을 하나의 Agent Review 요청으로 평가한다.
+
+### API
+
+```http
+POST /v1/agent-reviews?mode=deterministic
+```
+
+### 입력
+
+```json
+{
+  "review_type": "tool_call | final_response | memory_update | handoff | execution_log",
+  "session_id": "string",
+  "agent_id": "string",
+  "user_request": "string",
+  "agent_role": "string",
+  "constraints": ["string"],
+  "artifact": {}
+}
+```
+
+### 출력
+
+```json
+{
+  "review_type": "tool_call",
+  "risk_level": "low | medium | high | critical",
+  "recommendation": "continue | revise | ask_user | stop",
+  "requires_human_confirmation": true,
+  "drift_types": ["tool"],
+  "scores": {},
+  "reason": "string",
+  "evidence": []
+}
+```
+
+---
+
+## 11. F-010 등록 에이전트 실행
+
+### 목적
+
+사용자가 등록한 실행 가능한 에이전트를 백엔드에서 호출하고, 해당 에이전트가 생성한 DriftGuard review request를 즉시 평가한다.
+
+### API
+
+```http
+GET /v1/agents
+POST /v1/agents
+POST /v1/agent-runs
+```
+
+### 등록 입력
+
+```json
+{
+  "id": "custom-agent",
+  "name": "Custom Agent",
+  "runtime": "python_module",
+  "working_directory": "sample_agent",
+  "python": ".venv/bin/python",
+  "module": "sample_agent.travel_agent",
+  "scenarios": [
+    {"id": "demo", "label": "Demo", "input": "scenarios/seoul_weekend.json"}
+  ],
+  "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
+}
+```
+
+### 에이전트 실행 계약
+
+```bash
+python -m <module> \
+  --input <scenario-json> \
+  --drift-mode <mode> \
+  --output <agent-result-json> \
+  --review-output <driftguard-review-request-json>
+```
+
+### 검증 기준
+
+- `id`는 2-64자 영문/숫자/점/언더스코어/대시를 허용한다.
+- `working_directory`, `python`, `scenario input`은 backend 기준 상대경로만 허용한다.
+- `runtime`은 현재 `python_module`만 허용한다.
+- `drift_modes`는 `none`, `goal`, `tool`, `memory`, `handoff` 중 하나 이상이어야 한다.
+
+---
+
+## 12. F-011 Agent Registry UI
+
+### 목적
+
+프론트엔드에서 에이전트를 등록하고 실행 가능한 에이전트 목록을 확인할 수 있게 한다.
+
+### 화면 구성
+
+- `Console`
+  - Agent Review/Evaluation 샘플 요청 실행
+  - 등록 에이전트 선택 및 실행
+  - 결과 요약과 원본 JSON 표시
+- `Agent Registry`
+  - Basic, Runtime, Scenario, Policy Coverage 입력 섹션
+  - 등록 payload 미리보기
+  - registry JSON 샘플, CLI 계약, review request 템플릿 표시
+  - 등록된 에이전트 목록 표시
+
+---
+
+## 13. 에러 처리
 
 | 상황 | 처리 |
 |---|---|
@@ -256,6 +372,9 @@ Drift Score 및 개별 평가 결과에 따라 에이전트의 다음 행동을 
 | JSON 파싱 실패 | 재시도 후 실패 시 ask_user 또는 stop |
 | 평가 결과 누락 | 기본 정책에 따라 fail-closed |
 | 로그 저장 실패 | 작업은 계속하되 경고 기록 |
+| 에이전트 등록 경로가 절대경로 또는 상위경로 포함 | `400 bad_request` |
+| 등록되지 않은 agent_id 실행 | `400 bad_request` |
+| 에이전트 프로세스 실패 또는 timeout | `500 internal_server_error` 또는 안전 실패 응답 |
 
 ---
 

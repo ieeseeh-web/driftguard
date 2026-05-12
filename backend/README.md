@@ -195,7 +195,18 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
 
 ## 10. 에이전트 등록
 
-화면에서 선택해 실행할 에이전트는 프론트엔드의 `Register Agent` 폼 또는 `POST /v1/agents` API로 등록합니다. 등록 정보는 기본적으로 `backend/agents/registry.json`에 저장되며, `DRIFTGUARD_AGENT_REGISTRY` 환경변수로 저장 위치를 바꿀 수 있습니다. 현재 번들된 샘플 에이전트는 `sample-travel-assistant`로 등록되어 있습니다.
+화면에서 선택해 실행할 에이전트는 프론트엔드의 `Agent Registry` 페이지 또는 `POST /v1/agents` API로 등록합니다. 등록 정보는 기본적으로 `backend/agents/registry.json`에 저장되며, `DRIFTGUARD_AGENT_REGISTRY` 환경변수로 저장 위치를 바꿀 수 있습니다. 현재 번들된 샘플 에이전트는 `sample-travel-assistant`로 등록되어 있습니다.
+
+프론트엔드 등록 페이지는 다음 정보를 분리해서 입력합니다.
+
+| 분류 | 입력 내용 |
+|---|---|
+| Basic | Agent ID, 이름, 설명 |
+| Runtime | backend 기준 작업 폴더, Python 실행 파일, `python -m` 모듈 |
+| Scenario | 테스트 시나리오 ID와 입력 JSON 경로 |
+| Policy Coverage | 테스트할 drift mode 목록 |
+
+오른쪽 가이드 패널에는 registry JSON 샘플, CLI 실행 계약, DriftGuard review request 템플릿이 표시됩니다.
 
 등록 형식:
 

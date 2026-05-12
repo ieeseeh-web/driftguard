@@ -107,7 +107,44 @@ recommendation: stop
 requires_human_confirmation: true
 ```
 
-## 5. 구조
+## 5. Backend Agent Registry로 실행
+
+샘플 에이전트는 기본 레지스트리 `backend/agents/registry.json`에 `sample-travel-assistant`로 등록되어 있습니다.
+
+백엔드와 프론트엔드를 실행하면 화면에서 바로 선택해 실행할 수 있습니다.
+
+```bash
+cd ~/workspaces/driftguard/backend
+./bin/driftguard serve
+```
+
+```bash
+cd ~/workspaces/driftguard/frontend
+python3 -m http.server 5173
+open http://127.0.0.1:5173
+```
+
+프론트엔드 `Console` 화면의 `Registered Agent` 영역에서 `Sample Travel Assistant`를 선택하고 `Run Agent`를 누르면 백엔드가 다음 흐름을 수행합니다.
+
+```text
+GET /v1/agents
+POST /v1/agent-runs
+  -> python -m sample_agent.travel_agent
+  -> --review-output JSON 생성
+  -> DriftGuard Agent Review 실행
+```
+
+새 에이전트는 `Agent Registry` 화면 또는 `POST /v1/agents` API로 등록할 수 있습니다. 등록 대상 에이전트는 샘플 에이전트와 같은 CLI 계약을 지원해야 합니다.
+
+```bash
+python -m <module> \
+  --input <scenario-json> \
+  --drift-mode <mode> \
+  --output <agent-result-json> \
+  --review-output <driftguard-review-request-json>
+```
+
+## 6. 구조
 
 ```text
 sample_agent/
@@ -123,7 +160,7 @@ sample_agent/
     .gitkeep
 ```
 
-## 6. LangGraph 노드
+## 7. LangGraph 노드
 
 ```text
 intake

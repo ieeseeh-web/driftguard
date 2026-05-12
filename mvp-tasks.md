@@ -17,6 +17,8 @@ DriftGuard MVP는 에이전트의 최종 응답, 도구 호출, 메모리 업데
 | M5 | 로그 저장 구현 | JSONL 또는 SQLite 로그 |
 | M6 | 샘플 테스트 작성 | 테스트 케이스 10개 이상 |
 | M7 | CLI/API 프로토타입 | 로컬 실행 가능한 MVP |
+| M8 | 프론트엔드 콘솔 | 백엔드 API 실행 UI |
+| M9 | Agent Registry | 에이전트 등록/실행 연동 |
 
 ---
 
@@ -34,16 +36,16 @@ DriftGuard MVP는 에이전트의 최종 응답, 도구 호출, 메모리 업데
 
 ### M2. 평가 스키마 정의
 
-- [ ] `EvaluationType` 정의
+- [x] `EvaluationType` 정의
   - `goal`
   - `instruction`
   - `tool`
   - `memory`
   - `final`
-- [ ] `EvaluationRequest` 타입 정의
-- [ ] `EvaluationResult` 타입 정의
-- [ ] `PolicyDecision` 타입 정의
-- [ ] JSON Schema 작성
+- [x] `EvaluationRequest` 타입 정의
+- [x] `EvaluationResult` 타입 정의
+- [x] `PolicyDecision` 타입 정의
+- [x] JSON Schema 작성
 
 완료 기준:
 
@@ -53,12 +55,12 @@ DriftGuard MVP는 에이전트의 최종 응답, 도구 호출, 메모리 업데
 
 ### M3. Judge 프롬프트 작성
 
-- [ ] Goal Alignment Judge 프롬프트 작성
-- [ ] Instruction Following Judge 프롬프트 작성
-- [ ] Tool Risk Judge 프롬프트 작성
-- [ ] Memory Risk Judge 프롬프트 작성
-- [ ] Final Response Judge 프롬프트 작성
-- [ ] Judge 출력 JSON 형식 고정
+- [x] Goal Alignment Judge 프롬프트 작성
+- [x] Instruction Following Judge 프롬프트 작성
+- [x] Tool Risk Judge 프롬프트 작성
+- [x] Memory Risk Judge 프롬프트 작성
+- [x] Final Response Judge 프롬프트 작성
+- [x] Judge 출력 JSON 형식 고정
 - [ ] JSON 파싱 실패 시 재시도 프롬프트 작성
 
 완료 기준:
@@ -69,11 +71,11 @@ DriftGuard MVP는 에이전트의 최종 응답, 도구 호출, 메모리 업데
 
 ### M4. Policy Engine 구현
 
-- [ ] Drift Score 계산 함수 구현
-- [ ] 위험도 분류 함수 구현
-- [ ] 대응 결정 함수 구현
-- [ ] 고위험 도구 fail-closed 정책 구현
-- [ ] Memory 저장 거부 정책 구현
+- [x] Drift Score 계산 함수 구현
+- [x] 위험도 분류 함수 구현
+- [x] 대응 결정 함수 구현
+- [x] 고위험 도구 fail-closed 정책 구현
+- [x] Memory 저장 거부 정책 구현
 
 정책 초안:
 
@@ -92,12 +94,12 @@ score >= 0.8       -> stop
 
 ### M5. Evaluation Log 구현
 
-- [ ] 로그 포맷 정의
-- [ ] JSONL 저장 구현
-- [ ] 평가 ID 생성
-- [ ] timestamp 기록
+- [x] 로그 포맷 정의
+- [x] JSONL 저장 구현
+- [x] 평가 ID 생성
+- [x] timestamp 기록
 - [ ] 입력 원문 또는 해시 저장 정책 결정
-- [ ] 평가 결과와 최종 대응 저장
+- [x] 평가 결과와 최종 대응 저장
 
 완료 기준:
 
@@ -109,16 +111,16 @@ score >= 0.8       -> stop
 
 필수 테스트 케이스:
 
-- [ ] 정상적인 목표 일치 응답
-- [ ] 사용자 목표에서 벗어난 응답
-- [ ] 명시적 지시사항 누락
-- [ ] 불필요한 도구 호출
-- [ ] 승인 필요한 도구 호출
-- [ ] 안전한 도구 호출
-- [ ] 저장하면 안 되는 메모리
-- [ ] 저장해도 되는 사용자 선호
-- [ ] 다소 모호한 요청
-- [ ] 최종 응답 품질 부족
+- [x] 정상적인 목표 일치 응답
+- [x] 사용자 목표에서 벗어난 응답
+- [x] 명시적 지시사항 누락
+- [x] 불필요한 도구 호출
+- [x] 승인 필요한 도구 호출
+- [x] 안전한 도구 호출
+- [x] 저장하면 안 되는 메모리
+- [x] 저장해도 되는 사용자 선호
+- [x] 다소 모호한 요청
+- [x] 최종 응답 품질 부족
 
 완료 기준:
 
@@ -136,18 +138,55 @@ driftguard evaluate --type tool --input tool-call.json
 driftguard evaluate --type memory --input memory.json
 ```
 
-#### API 후보
+#### API 구현
 
 ```http
-POST /evaluate/goal
-POST /evaluate/tool
-POST /evaluate/memory
-POST /policy/decide
+GET /health
+GET /docs
+GET /openapi.json
+GET /v1/agents
+POST /v1/agents
+POST /v1/agent-runs
+POST /v1/evaluations
+POST /v1/agent-reviews
 ```
 
 완료 기준:
 
 - 로컬에서 샘플 입력을 넣고 평가 결과를 확인할 수 있어야 한다.
+
+---
+
+### M8. 프론트엔드 콘솔
+
+- [x] 정적 프론트엔드 구조 생성
+- [x] 백엔드 API base URL 설정
+- [x] `/health` 상태 확인
+- [x] Agent Review/Evaluation 샘플 로드
+- [x] JSON 포맷팅
+- [x] 요청 실행 및 결과 요약 표시
+- [x] Swagger 링크 연결
+
+완료 기준:
+
+- `python3 -m http.server 5173`으로 실행하고 백엔드 API와 연동되어야 한다.
+
+---
+
+### M9. Agent Registry
+
+- [x] 에이전트 레지스트리 파일 구조 정의
+- [x] `GET /v1/agents` 구현
+- [x] `POST /v1/agents` 등록/갱신 구현
+- [x] `POST /v1/agent-runs` 등록 에이전트 실행 구현
+- [x] 샘플 LangGraph 에이전트 등록
+- [x] 프론트엔드 Agent Registry 페이지 구현
+- [x] 등록 샘플/템플릿/연동 요구사항 표시
+- [x] 등록 API 테스트 추가
+
+완료 기준:
+
+- 사용자가 화면에서 연결 가능한 에이전트를 등록하고, 등록된 에이전트를 선택해 DriftGuard 리뷰까지 실행할 수 있어야 한다.
 
 ---
 
@@ -204,9 +243,12 @@ POST /policy/decide
 
 ## 7. 다음 액션
 
-- [ ] `schema/` 디렉터리 생성
-- [ ] `prompts/` 디렉터리 생성
-- [ ] `examples/` 디렉터리 생성
-- [ ] `src/` 디렉터리 생성
-- [ ] 개발 언어 결정
-- [ ] CLI 우선 구현 여부 결정
+- [x] `backend/schema/` 디렉터리 생성
+- [x] `backend/prompts/` 디렉터리 생성
+- [x] `backend/examples/` 디렉터리 생성
+- [x] `backend/src/` 디렉터리 생성
+- [x] 개발 언어 결정
+- [x] CLI 우선 구현 여부 결정
+- [x] 백엔드 API 방식으로 전환
+- [x] 프론트엔드 콘솔 추가
+- [x] Agent Registry 추가
