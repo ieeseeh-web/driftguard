@@ -21,12 +21,13 @@
 | A-009 | done | 3 | CLI 명령 설계/구현 | `driftguard review-agent --input ...` 구현 |
 | A-010 | done | 3 | 기존 evaluator 결과를 보조 신호로 통합 | rule score + agent guidance 결합 |
 | A-011 | done | 4 | 테스트 케이스 추가 | agent review 테스트 3개 추가 |
+| A-012 | done | 3 | Agent Review JSONL 로그 저장 옵션 추가 | `review-agent --log` 구현 및 로그 파싱 확인 |
+| A-013 | done | 3 | Handoff / execution_log 샘플 추가 | 샘플 2개와 평가 로직/테스트 추가 |
 
 ## Backlog
-- 다중 에이전트 handoff 전용 평가
 - PR/코드리뷰용 Drift 평가 모드
 - OpenClaw sub-agent 실행 예시
-- 평가 결과 JSONL 저장 확장
+- JSON Schema 검증 테스트 추가
 - Drift 유형별 개선 가이드 라이브러리
 - Judge 결과와 rule evaluator 결과 불일치 처리 정책
 

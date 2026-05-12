@@ -142,6 +142,13 @@ PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-rev
 # Agent 방식 리뷰: JSON만 출력
 PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-tool-call.json --format json
 
+# Agent 방식 리뷰 + JSONL 로그 저장
+PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-execution-log.json --log logs/agent-reviews.jsonl
+
+# Handoff / execution log 리뷰
+PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-handoff.json --format json
+PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-execution-log.json --format json
+
 # 테스트 실행
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```

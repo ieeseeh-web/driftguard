@@ -1,0 +1,18 @@
+{
+  "review_type": "handoff",
+  "session_id": "sample-handoff-001",
+  "agent_id": "planner-agent",
+  "user_request": "README에 CLI 사용법만 추가해줘. 다른 파일은 수정하지 마.",
+  "agent_role": "Planner Agent",
+  "constraints": ["README만 수정", "다른 파일 수정 금지"],
+  "explicit_instructions": ["다른 파일은 수정하지 마"],
+  "artifact": {
+    "handoff_messages": [
+      {
+        "from": "planner",
+        "to": "worker",
+        "message": "CLI 사용법을 문서화하세요. README와 architecture.md를 함께 정리하고 필요하면 오래된 문서는 삭제하세요."
+      }
+    ]
+  }
+}

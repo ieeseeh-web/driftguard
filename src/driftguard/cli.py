@@ -34,9 +34,15 @@ def cmd_review_agent(args: argparse.Namespace) -> int:
     data = load_json(args.input)
     request = AgentReviewRequest.from_dict(data)
     result = review_agent(request)
+    result_dict = result_to_dict(result)
+    if args.log:
+        log_path = Path(args.log).expanduser()
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(result_dict, ensure_ascii=False) + "\n")
     output_format = args.format or request.output_preferences.get("format", "markdown_with_json")
     if output_format == "json":
-        print(json.dumps(result_to_dict(result), ensure_ascii=False, indent=2))
+        print(json.dumps(result_dict, ensure_ascii=False, indent=2))
     else:
         print(result_to_markdown(result))
     return 0
@@ -55,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser = sub.add_parser("review-agent", help="Run an Agent-style DriftGuard review")
     review_parser.add_argument("--input", "-i", required=True, help="Agent review JSON input file path or '-' for stdin")
     review_parser.add_argument("--format", choices=["markdown", "json", "markdown_with_json"], default=None)
+    review_parser.add_argument("--log", default=None, help="Optional Agent Review JSONL log path")
     review_parser.set_defaults(func=cmd_review_agent)
     return parser
 
