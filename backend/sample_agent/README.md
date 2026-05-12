@@ -71,7 +71,43 @@ PYTHONPATH=src python3 -m driftguard.cli review-agent \
   --log logs/sample-agent-reviews.jsonl
 ```
 
-## 4. 구조
+## 4. DriftGuard API 직접 연동
+
+백엔드 API가 실행 중이면 샘플 에이전트가 실행 직후 DriftGuard API로 직접 리뷰 요청을 보낼 수 있습니다.
+
+터미널 1:
+
+```bash
+cd ~/workspaces/driftguard/backend
+./bin/driftguard serve
+```
+
+터미널 2:
+
+```bash
+cd ~/workspaces/driftguard/backend/sample_agent
+source .venv/bin/activate
+
+python -m sample_agent.travel_agent \
+  --input scenarios/seoul_weekend.json \
+  --drift-mode tool \
+  --output outputs/tool_drift_result.json \
+  --review-output outputs/tool_drift_review.json \
+  --driftguard-api http://127.0.0.1:17321 \
+  --review-api-output outputs/tool_drift_api_result.json
+```
+
+출력에는 DriftGuard 평가 요약이 함께 표시됩니다.
+
+```text
+--- driftguard review ---
+risk_level: critical
+overall_drift_score: 1.0
+recommendation: stop
+requires_human_confirmation: true
+```
+
+## 5. 구조
 
 ```text
 sample_agent/
@@ -87,7 +123,7 @@ sample_agent/
     .gitkeep
 ```
 
-## 5. LangGraph 노드
+## 6. LangGraph 노드
 
 ```text
 intake

@@ -52,6 +52,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(data["openapi"], "3.0.3")
         self.assertIn("/v1/evaluations", data["paths"])
         self.assertIn("/v1/agent-reviews", data["paths"])
+        self.assertIn("/v1/sample-agent/runs", data["paths"])
 
     def test_swagger_docs_html(self):
         status, content_type, body = self.request_raw("GET", "/docs")
@@ -104,6 +105,14 @@ class ApiTests(unittest.TestCase):
         conn.close()
         self.assertEqual(response.status, 400)
         self.assertIn("error", data)
+
+    def test_sample_agent_invalid_scenario_returns_400(self):
+        status, data = self.request("POST", "/v1/sample-agent/runs", {
+            "scenario": "unknown",
+            "drift_mode": "tool",
+        })
+        self.assertEqual(status, 400)
+        self.assertEqual(data["error"]["code"], "bad_request")
 
 
 if __name__ == "__main__":

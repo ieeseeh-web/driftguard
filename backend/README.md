@@ -186,6 +186,7 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
 | `GET` | `/openapi.json` | OpenAPI 3.0 스펙 |
 | `POST` | `/v1/evaluations` | 기존 Goal/Instruction/Tool/Memory/Final 평가 |
 | `POST` | `/v1/agent-reviews` | Agent 방식 Drift 리뷰 |
+| `POST` | `/v1/sample-agent/runs` | 번들된 샘플 에이전트 실행 및 DriftGuard 리뷰 |
 
 ---
 

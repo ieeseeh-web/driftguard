@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DriftGuard Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">DG</span>
+        <span>DriftGuard</span>
+      </div>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#console">Console</a>
+        <a href="#result">Result</a>
+        <a id="swaggerLink" href="http://127.0.0.1:17321/docs" target="_blank" rel="noreferrer">Swagger</a>
+      </nav>
+      <div class="api-control">
+        <label for="apiBase">API</label>
+        <input id="apiBase" type="url" value="http://127.0.0.1:17321" spellcheck="false">
+        <button id="checkHealth" class="icon-button" type="button" aria-label="Check API health" title="Check API health">
+          <i data-lucide="activity"></i>
+        </button>
+      </div>
+    </header>
+
+    <main id="console" class="shell">
+      <section class="overview-band" aria-label="DriftGuard status">
+        <div>
+          <p class="eyebrow">Agent Drift Guardrail</p>
+          <h1>Backend API Console</h1>
+        </div>
+        <div class="status-strip" aria-live="polite">
+          <div>
+            <span class="metric-label">Status</span>
+            <strong id="healthStatus">checking</strong>
+          </div>
+          <div>
+            <span class="metric-label">Endpoint</span>
+            <strong id="activeEndpoint">/v1/agent-reviews</strong>
+          </div>
+          <div>
+            <span class="metric-label">Last Run</span>
+            <strong id="lastRun">-</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="sidebar" aria-label="Evaluation options">
+          <div class="section-heading">
+            <span>Mode</span>
+          </div>
+          <div class="pill-tabs" role="tablist" aria-label="Request type">
+            <button id="modeReview" class="pill-tab active" type="button" data-mode="agent">Agent Review</button>
+            <button id="modeEvaluation" class="pill-tab" type="button" data-mode="evaluation">Evaluation</button>
+          </div>
+
+          <label class="field-label" for="sampleSelect">Sample</label>
+          <select id="sampleSelect"></select>
+
+          <label class="field-label" for="reviewMode">Judge Mode</label>
+          <select id="reviewMode">
+            <option value="deterministic">deterministic</option>
+            <option value="hybrid">hybrid</option>
+          </select>
+
+          <div class="quick-actions">
+            <button id="loadSample" class="button-secondary" type="button">
+              <i data-lucide="file-json"></i>
+              Load
+            </button>
+            <button id="formatJson" class="button-tertiary" type="button">
+              <i data-lucide="braces"></i>
+              Format
+            </button>
+          </div>
+
+          <div class="mini-table" aria-label="Backend endpoints">
+            <div><span>Health</span><code>/health</code></div>
+            <div><span>Review</span><code>/v1/agent-reviews</code></div>
+            <div><span>Eval</span><code>/v1/evaluations</code></div>
+          </div>
+
+          <div class="sample-agent-box" aria-label="Sample agent runner">
+            <div class="section-heading">
+              <span>Sample Agent</span>
+            </div>
+            <label class="field-label" for="sampleAgentScenario">Scenario</label>
+            <select id="sampleAgentScenario">
+              <option value="seoul_weekend">Seoul weekend</option>
+              <option value="short_answer_today">Short answer today</option>
+            </select>
+            <label class="field-label" for="sampleAgentDrift">Drift</label>
+            <select id="sampleAgentDrift">
+              <option value="tool">tool</option>
+              <option value="goal">goal</option>
+              <option value="memory">memory</option>
+              <option value="handoff">handoff</option>
+              <option value="none">none</option>
+            </select>
+            <button id="runSampleAgent" class="button-primary" type="button">
+              <i data-lucide="bot"></i>
+              Run Sample
+            </button>
+          </div>
+        </aside>
+
+        <section class="editor-panel" aria-label="Request editor">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Request</p>
+              <h2 id="requestTitle">Agent Review</h2>
+            </div>
+            <button id="runRequest" class="button-primary" type="button">
+              <i data-lucide="play"></i>
+              Run
+            </button>
+          </div>
+          <textarea id="requestBody" spellcheck="false" aria-label="JSON request body"></textarea>
+          <p id="requestError" class="form-error" role="alert"></p>
+        </section>
+
+        <section id="result" class="result-panel" aria-label="Evaluation result">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Result</p>
+              <h2 id="resultTitle">Waiting</h2>
+            </div>
+            <span id="riskBadge" class="badge neutral">idle</span>
+          </div>
+
+          <div class="score-board">
+            <div class="score-ring" aria-label="Overall drift score">
+              <svg viewBox="0 0 120 120" role="img">
+                <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+                <circle id="scoreArc" class="ring-value" cx="60" cy="60" r="52"></circle>
+              </svg>
+              <div>
+                <strong id="scoreValue">0.00</strong>
+                <span>overall</span>
+              </div>
+            </div>
+            <div class="result-meta">
+              <div><span>Recommendation</span><strong id="recommendation">-</strong></div>
+              <div><span>Confirmation</span><strong id="confirmation">-</strong></div>
+              <div><span>Confidence</span><strong id="confidence">-</strong></div>
+            </div>
+          </div>
+
+          <div class="reason-block">
+            <span class="metric-label">Reason</span>
+            <p id="reasonText">Run a request to inspect policy output.</p>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Result views">
+            <button class="segmented-tab active" type="button" data-view="summary">Summary</button>
+            <button class="segmented-tab" type="button" data-view="json">JSON</button>
+          </div>
+
+          <div id="summaryView" class="summary-view"></div>
+          <pre id="jsonView" class="json-view hidden"></pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

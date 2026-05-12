@@ -4,6 +4,8 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any, Literal, TypedDict
+from urllib import error, request
+from urllib.parse import urlencode
 
 try:
     from langgraph.graph import END, StateGraph
@@ -238,31 +240,84 @@ def run(input_path: Path, drift_mode: DriftMode) -> TravelState:
     return app.invoke(initial)
 
 
+def submit_review_request(
+    review: dict[str, Any],
+    api_base: str,
+    *,
+    judge_mode: str = "deterministic",
+    timeout_seconds: float = 10.0,
+) -> dict[str, Any]:
+    base = api_base.rstrip("/")
+    query = urlencode({"mode": judge_mode})
+    url = f"{base}/v1/agent-reviews?{query}"
+    body = json.dumps(review, ensure_ascii=False).encode("utf-8")
+    req = request.Request(
+        url,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=timeout_seconds) as response:
+            payload = response.read().decode("utf-8")
+    except error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"DriftGuard API returned HTTP {exc.code}: {detail}") from exc
+    except error.URLError as exc:
+        raise RuntimeError(f"Could not reach DriftGuard API at {base}: {exc.reason}") from exc
+    return json.loads(payload)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="LangGraph travel assistant sample for DriftGuard")
     parser.add_argument("--input", required=True, help="Scenario JSON path")
     parser.add_argument("--drift-mode", choices=["none", "goal", "tool", "memory", "handoff"], default="none")
     parser.add_argument("--output", default=None, help="Write full agent result JSON")
     parser.add_argument("--review-output", default=None, help="Write DriftGuard review-agent compatible JSON")
+    parser.add_argument(
+        "--driftguard-api",
+        default=None,
+        help="Submit the generated review request to this DriftGuard API base URL, for example http://127.0.0.1:17321",
+    )
+    parser.add_argument(
+        "--judge-mode",
+        choices=["deterministic", "hybrid"],
+        default="deterministic",
+        help="Judge mode used when submitting to DriftGuard API.",
+    )
+    parser.add_argument("--review-api-output", default=None, help="Write DriftGuard API review result JSON")
     args = parser.parse_args()
 
     result = run(Path(args.input), args.drift_mode)
     result_dict = dict(result)
+    review = make_review_request(result)
 
     if args.output:
         out = Path(args.output)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(result_dict, ensure_ascii=False, indent=2), encoding="utf-8")
     if args.review_output:
-        review = make_review_request(result)
         out = Path(args.review_output)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(review, ensure_ascii=False, indent=2), encoding="utf-8")
+    api_result: dict[str, Any] | None = None
+    if args.driftguard_api:
+        api_result = submit_review_request(review, args.driftguard_api, judge_mode=args.judge_mode)
+        if args.review_api_output:
+            out = Path(args.review_api_output)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(api_result, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(result.get("final_answer", ""))
     print("\n--- execution log ---")
     for item in result.get("execution_log", []):
         print(f"- {item}")
+    if api_result:
+        print("\n--- driftguard review ---")
+        print(f"risk_level: {api_result.get('risk_level')}")
+        print(f"overall_drift_score: {api_result.get('overall_drift_score')}")
+        print(f"recommendation: {api_result.get('recommendation')}")
+        print(f"requires_human_confirmation: {api_result.get('requires_human_confirmation')}")
     return 0
 
 

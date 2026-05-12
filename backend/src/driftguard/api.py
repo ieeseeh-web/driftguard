@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
+import tempfile
 import time
 from dataclasses import asdict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -79,6 +83,23 @@ def openapi_schema() -> JsonDict:
                         },
                         "400": {"$ref": "#/components/responses/Error"},
                         "415": {"$ref": "#/components/responses/Error"},
+                    },
+                }
+            },
+            "/v1/sample-agent/runs": {
+                "post": {
+                    "summary": "Run the bundled sample agent and review it",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SampleAgentRunRequest"}}},
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Sample agent run plus DriftGuard review",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SampleAgentRunResult"}}},
+                        },
+                        "400": {"$ref": "#/components/responses/Error"},
+                        "500": {"$ref": "#/components/responses/Error"},
                     },
                 }
             },
@@ -229,6 +250,38 @@ def openapi_schema() -> JsonDict:
                         "metadata": {"type": "object", "additionalProperties": True},
                     },
                 },
+                "SampleAgentRunRequest": {
+                    "type": "object",
+                    "properties": {
+                        "scenario": {
+                            "type": "string",
+                            "enum": ["seoul_weekend", "short_answer_today"],
+                            "default": "seoul_weekend",
+                        },
+                        "drift_mode": {
+                            "type": "string",
+                            "enum": ["none", "goal", "tool", "memory", "handoff"],
+                            "default": "tool",
+                        },
+                        "judge_mode": {
+                            "type": "string",
+                            "enum": ["deterministic", "hybrid"],
+                            "default": "deterministic",
+                        },
+                    },
+                },
+                "SampleAgentRunResult": {
+                    "type": "object",
+                    "properties": {
+                        "scenario": {"type": "string"},
+                        "drift_mode": {"type": "string"},
+                        "agent_result": {"type": "object", "additionalProperties": True},
+                        "review_request": {"type": "object", "additionalProperties": True},
+                        "review_result": {"$ref": "#/components/schemas/AgentReviewResult"},
+                        "stdout": {"type": "string"},
+                        "stderr": {"type": "string"},
+                    },
+                },
                 "HealthResponse": {
                     "type": "object",
                     "properties": {
@@ -368,6 +421,95 @@ def handle_agent_review(data: JsonDict, query: dict[str, list[str]] | None = Non
     return result_dict
 
 
+def handle_sample_agent_run(data: JsonDict) -> JsonDict:
+    scenarios = {
+        "seoul_weekend": "seoul_weekend.json",
+        "short_answer_today": "short_answer_today.json",
+    }
+    drift_modes = {"none", "goal", "tool", "memory", "handoff"}
+    judge_modes = {"deterministic", "hybrid"}
+
+    scenario = str(data.get("scenario", "seoul_weekend"))
+    drift_mode = str(data.get("drift_mode", "tool"))
+    judge_mode = str(data.get("judge_mode", "deterministic"))
+    timeout_seconds = float(data.get("timeout_seconds", 20))
+
+    if scenario not in scenarios:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported sample scenario", {"scenario": scenario})
+    if drift_mode not in drift_modes:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported drift_mode", {"drift_mode": drift_mode})
+    if judge_mode not in judge_modes:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported judge_mode", {"judge_mode": judge_mode})
+
+    backend_root = Path(__file__).resolve().parents[2]
+    sample_root = backend_root / "sample_agent"
+    scenario_path = sample_root / "scenarios" / scenarios[scenario]
+    if not scenario_path.exists():
+        raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Sample scenario file is missing", {"path": str(scenario_path)})
+
+    python_bin = sample_root / ".venv" / "bin" / "python"
+    python = str(python_bin if python_bin.exists() else Path(sys.executable))
+
+    with tempfile.TemporaryDirectory(prefix="driftguard-sample-agent-") as tmp:
+        tmp_path = Path(tmp)
+        agent_output = tmp_path / "agent_result.json"
+        review_output = tmp_path / "review_request.json"
+        cmd = [
+            python,
+            "-m",
+            "sample_agent.travel_agent",
+            "--input",
+            str(scenario_path),
+            "--drift-mode",
+            drift_mode,
+            "--output",
+            str(agent_output),
+            "--review-output",
+            str(review_output),
+        ]
+        try:
+            completed = subprocess.run(
+                cmd,
+                cwd=sample_root,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ApiError(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Sample agent execution timed out",
+                {"timeout_seconds": timeout_seconds, "stdout": exc.stdout, "stderr": exc.stderr},
+            ) from exc
+        if completed.returncode != 0:
+            raise ApiError(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                "Sample agent execution failed",
+                {
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout,
+                    "stderr": completed.stderr,
+                    "command": cmd,
+                },
+            )
+        agent_result = json.loads(agent_output.read_text(encoding="utf-8"))
+        review_request = json.loads(review_output.read_text(encoding="utf-8"))
+
+    request_obj = AgentReviewRequest.from_dict(review_request)
+    review_result = review_agent(request_obj, mode=judge_mode)
+    return {
+        "scenario": scenario,
+        "drift_mode": drift_mode,
+        "judge_mode": judge_mode,
+        "agent_result": agent_result,
+        "review_request": review_request,
+        "review_result": result_to_dict(review_result),
+        "stdout": completed.stdout,
+        "stderr": completed.stderr,
+    }
+
+
 class DriftGuardRequestHandler(BaseHTTPRequestHandler):
     server_version = "DriftGuardAPI/0.1"
 
@@ -396,6 +538,7 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                     "GET /openapi.json",
                     "POST /v1/evaluations",
                     "POST /v1/agent-reviews",
+                    "POST /v1/sample-agent/runs",
                 ],
             }, include_body=include_body)
             return
@@ -417,6 +560,9 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/v1/agent-reviews":
                 _json_response(self, HTTPStatus.OK, handle_agent_review(data, query))
+                return
+            if parsed.path == "/v1/sample-agent/runs":
+                _json_response(self, HTTPStatus.OK, handle_sample_agent_run(data))
                 return
             raise ApiError(HTTPStatus.NOT_FOUND, f"Unknown endpoint: {parsed.path}")
         except ApiError as exc:
