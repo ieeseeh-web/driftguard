@@ -1,5 +1,46 @@
 const DEFAULT_API_BASE = "http://127.0.0.1:17321";
 
+const agentTemplates = {
+  registry: {
+    id: "custom-agent",
+    name: "Custom Agent",
+    description: "Runnable Python module agent",
+    runtime: "python_module",
+    working_directory: "sample_agent",
+    python: ".venv/bin/python",
+    module: "sample_agent.travel_agent",
+    scenarios: [
+      {
+        id: "demo",
+        label: "Demo",
+        input: "scenarios/seoul_weekend.json"
+      }
+    ],
+    drift_modes: ["none", "goal", "tool", "memory", "handoff"]
+  },
+  cli: `python -m sample_agent.travel_agent \\
+  --input scenarios/seoul_weekend.json \\
+  --drift-mode tool \\
+  --output /tmp/agent-result.json \\
+  --review-output /tmp/review-request.json`,
+  review: {
+    review_type: "tool_call",
+    session_id: "agent-run-001",
+    agent_id: "custom-agent",
+    user_request: "사용자 요청 원문",
+    agent_role: "연동 대상 에이전트 역할",
+    constraints: ["사용자가 명시한 제한 사항"],
+    artifact: {
+      current_goal: "에이전트가 수행하려는 목표",
+      tool_name: "tool name",
+      tool_args: {
+        command: "tool arguments"
+      },
+      expected_side_effects: ["예상되는 외부 영향"]
+    }
+  }
+};
+
 const samples = {
   agent: {
     "Tool call drift": {
@@ -100,11 +141,17 @@ const samples = {
 
 const state = {
   mode: "agent",
+  view: "console",
   result: null,
-  registeredAgents: []
+  registeredAgents: [],
+  activeTemplate: "registry"
 };
 
 const els = {
+  consoleNav: document.querySelector("#consoleNav"),
+  agentRegistryNav: document.querySelector("#agentRegistryNav"),
+  consoleView: document.querySelector("#console"),
+  agentRegistryView: document.querySelector("#agent-registry"),
   apiBase: document.querySelector("#apiBase"),
   swaggerLink: document.querySelector("#swaggerLink"),
   checkHealth: document.querySelector("#checkHealth"),
@@ -117,6 +164,23 @@ const els = {
   agentScenario: document.querySelector("#agentScenario"),
   agentDrift: document.querySelector("#agentDrift"),
   runRegisteredAgent: document.querySelector("#runRegisteredAgent"),
+  newAgentId: document.querySelector("#newAgentId"),
+  newAgentName: document.querySelector("#newAgentName"),
+  newAgentDescription: document.querySelector("#newAgentDescription"),
+  newAgentWorkdir: document.querySelector("#newAgentWorkdir"),
+  newAgentPython: document.querySelector("#newAgentPython"),
+  newAgentModule: document.querySelector("#newAgentModule"),
+  newAgentScenario: document.querySelector("#newAgentScenario"),
+  newAgentScenarioInput: document.querySelector("#newAgentScenarioInput"),
+  newAgentDriftModes: document.querySelector("#newAgentDriftModes"),
+  registerAgent: document.querySelector("#registerAgent"),
+  registryMessage: document.querySelector("#registryMessage"),
+  previewAgentPayload: document.querySelector("#previewAgentPayload"),
+  useSampleTemplate: document.querySelector("#useSampleTemplate"),
+  openAgentRegistry: document.querySelector("#openAgentRegistry"),
+  agentTemplateView: document.querySelector("#agentTemplateView"),
+  registeredAgentList: document.querySelector("#registeredAgentList"),
+  refreshAgents: document.querySelector("#refreshAgents"),
   loadSample: document.querySelector("#loadSample"),
   formatJson: document.querySelector("#formatJson"),
   runRequest: document.querySelector("#runRequest"),
@@ -142,6 +206,21 @@ function apiBase() {
 function renderIcons() {
   if (window.lucide) {
     window.lucide.createIcons();
+  }
+}
+
+function showView(view) {
+  state.view = view;
+  els.consoleView.classList.toggle("active", view === "console");
+  els.agentRegistryView.classList.toggle("active", view === "registry");
+  els.consoleNav.classList.toggle("active", view === "console");
+  els.agentRegistryNav.classList.toggle("active", view === "registry");
+  if (view === "registry") {
+    els.activeEndpoint.textContent = "/v1/agents";
+    renderAgentList();
+    renderAgentTemplate();
+  } else {
+    els.activeEndpoint.textContent = endpointForMode();
   }
 }
 
@@ -200,6 +279,14 @@ function setSampleBusy(isBusy) {
   renderIcons();
 }
 
+function setRegisterBusy(isBusy) {
+  els.registerAgent.disabled = isBusy;
+  els.registerAgent.innerHTML = isBusy
+    ? '<i data-lucide="loader-2"></i> Registering'
+    : '<i data-lucide="plus"></i> Register Agent';
+  renderIcons();
+}
+
 function endpointForMode() {
   if (state.mode === "agent") {
     return `/v1/agent-reviews?mode=${encodeURIComponent(els.reviewMode.value)}`;
@@ -230,6 +317,7 @@ async function loadRegisteredAgents() {
   const data = await response.json();
   state.registeredAgents = data.agents || [];
   fillRegisteredAgents();
+  renderAgentList();
 }
 
 function fillRegisteredAgents() {
@@ -245,6 +333,117 @@ function fillRegisteredAgents() {
     els.registeredAgent.value = current;
   }
   fillAgentRunOptions();
+}
+
+function buildAgentPayload() {
+  const id = els.newAgentId.value.trim();
+  const name = els.newAgentName.value.trim();
+  const description = els.newAgentDescription.value.trim();
+  const workingDirectory = els.newAgentWorkdir.value.trim();
+  const python = els.newAgentPython.value.trim() || ".venv/bin/python";
+  const module = els.newAgentModule.value.trim();
+  const scenario = els.newAgentScenario.value.trim();
+  const scenarioInput = els.newAgentScenarioInput.value.trim();
+  const driftModes = els.newAgentDriftModes.value
+    .split(",")
+    .map((mode) => mode.trim())
+    .filter(Boolean);
+  return {
+    payload: {
+      id,
+      name,
+      description,
+      runtime: "python_module",
+      working_directory: workingDirectory,
+      python,
+      module,
+      scenarios: [
+        {
+          id: scenario,
+          label: scenario,
+          input: scenarioInput
+        }
+      ],
+      drift_modes: driftModes
+    },
+    fields: { id, name, workingDirectory, module, scenario, scenarioInput, driftModes }
+  };
+}
+
+function validateAgentPayload(fields) {
+  if (!fields.id || !fields.name || !fields.workingDirectory || !fields.module || !fields.scenario || !fields.scenarioInput) {
+    return "Agent ID, name, workdir, module, scenario, and scenario input are required.";
+  }
+  if (fields.driftModes.length === 0) {
+    return "At least one drift mode is required.";
+  }
+  return "";
+}
+
+function showRegistryMessage(message, isError = true) {
+  els.registryMessage.textContent = message;
+  els.registryMessage.classList.toggle("success-message", !isError);
+  els.requestError.textContent = isError ? message : "";
+}
+
+function applyAgentTemplate() {
+  const template = agentTemplates.registry;
+  els.newAgentId.value = template.id;
+  els.newAgentName.value = template.name;
+  els.newAgentDescription.value = template.description;
+  els.newAgentWorkdir.value = template.working_directory;
+  els.newAgentPython.value = template.python;
+  els.newAgentModule.value = template.module;
+  els.newAgentScenario.value = template.scenarios[0].id;
+  els.newAgentScenarioInput.value = template.scenarios[0].input;
+  els.newAgentDriftModes.value = template.drift_modes.join(",");
+  renderAgentTemplate("registry");
+  showRegistryMessage("Sample template loaded.", false);
+}
+
+function previewAgentPayload() {
+  const { payload, fields } = buildAgentPayload();
+  const validationError = validateAgentPayload(fields);
+  if (validationError) {
+    showRegistryMessage(validationError);
+    return;
+  }
+  els.requestTitle.textContent = "Agent Registration Payload";
+  els.requestBody.value = JSON.stringify(payload, null, 2);
+  showRegistryMessage("Preview generated in the request editor.", false);
+  showView("console");
+}
+
+function renderAgentTemplate(templateKey = state.activeTemplate) {
+  state.activeTemplate = templateKey;
+  document.querySelectorAll("[data-template]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.template === templateKey);
+  });
+  const template = agentTemplates[templateKey];
+  els.agentTemplateView.textContent = typeof template === "string" ? template : JSON.stringify(template, null, 2);
+}
+
+function renderAgentList() {
+  if (!els.registeredAgentList) {
+    return;
+  }
+  if (!state.registeredAgents.length) {
+    els.registeredAgentList.innerHTML = '<p class="helper-text">No agents are registered.</p>';
+    return;
+  }
+  els.registeredAgentList.innerHTML = state.registeredAgents.map((agent) => `
+    <article class="agent-row">
+      <div>
+        <strong>${escapeHtml(agent.name || agent.id)}</strong>
+        <p>${escapeHtml(agent.description || agent.id)}</p>
+      </div>
+      <div class="agent-row-meta">
+        <code>${escapeHtml(agent.id)}</code>
+        <span>${escapeHtml((agent.scenarios || []).length)} scenarios</span>
+        <span>${escapeHtml((agent.drift_modes || []).join(", "))}</span>
+      </div>
+    </article>
+  `).join("");
 }
 
 function selectedAgent() {
@@ -272,6 +471,44 @@ function fillAgentRunOptions() {
   });
   if ([...els.agentDrift.options].some((option) => option.value === "tool")) {
     els.agentDrift.value = "tool";
+  }
+}
+
+async function registerAgent() {
+  const { payload, fields } = buildAgentPayload();
+  const validationError = validateAgentPayload(fields);
+  if (validationError) {
+    showRegistryMessage(validationError);
+    return;
+  }
+  setRegisterBusy(true);
+  els.requestError.textContent = "";
+  showRegistryMessage("");
+  try {
+    const response = await fetch(`${apiBase()}/v1/agents`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data?.error?.message || `HTTP ${response.status}`);
+    }
+    await loadRegisteredAgents();
+    els.registeredAgent.value = data.agent.id;
+    fillAgentRunOptions();
+    els.activeEndpoint.textContent = "/v1/agents";
+    els.lastRun.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    els.requestBody.value = JSON.stringify(payload, null, 2);
+    els.requestTitle.textContent = data.created ? "Registered Agent" : "Updated Agent";
+    showRegistryMessage(data.created ? "Agent registered." : "Agent updated.", false);
+    renderAgentList();
+  } catch (error) {
+    showRegistryMessage(error.message);
+  } finally {
+    setRegisterBusy(false);
   }
 }
 
@@ -429,7 +666,7 @@ function judgeList(judges) {
 }
 
 function escapeHtml(value) {
-  return value
+  return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -448,9 +685,21 @@ document.querySelectorAll(".pill-tab").forEach((button) => {
   button.addEventListener("click", () => setMode(button.dataset.mode));
 });
 
-document.querySelectorAll(".segmented-tab").forEach((button) => {
+els.consoleNav.addEventListener("click", (event) => {
+  event.preventDefault();
+  showView("console");
+});
+
+els.agentRegistryNav.addEventListener("click", (event) => {
+  event.preventDefault();
+  showView("registry");
+});
+
+els.openAgentRegistry.addEventListener("click", () => showView("registry"));
+
+document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => {
-    document.querySelectorAll(".segmented-tab").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll("[data-view]").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     const showJson = button.dataset.view === "json";
     els.jsonView.classList.toggle("hidden", !showJson);
@@ -466,7 +715,15 @@ els.registeredAgent.addEventListener("change", fillAgentRunOptions);
 els.formatJson.addEventListener("click", formatJson);
 els.runRequest.addEventListener("click", runRequest);
 els.runRegisteredAgent.addEventListener("click", runRegisteredAgent);
+els.registerAgent.addEventListener("click", registerAgent);
+els.previewAgentPayload.addEventListener("click", previewAgentPayload);
+els.useSampleTemplate.addEventListener("click", applyAgentTemplate);
+els.refreshAgents.addEventListener("click", loadRegisteredAgents);
+document.querySelectorAll("[data-template]").forEach((button) => {
+  button.addEventListener("click", () => renderAgentTemplate(button.dataset.template));
+});
 
 setMode("agent");
+renderAgentTemplate();
 renderIcons();
 checkHealth();

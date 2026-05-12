@@ -185,6 +185,7 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
 | `GET` | `/docs` | Swagger UI |
 | `GET` | `/openapi.json` | OpenAPI 3.0 스펙 |
 | `GET` | `/v1/agents` | 등록된 실행 가능 에이전트 목록 |
+| `POST` | `/v1/agents` | 실행 가능 에이전트 등록 또는 갱신 |
 | `POST` | `/v1/agent-runs` | 등록된 에이전트 실행 및 DriftGuard 리뷰 |
 | `POST` | `/v1/evaluations` | 기존 Goal/Instruction/Tool/Memory/Final 평가 |
 | `POST` | `/v1/agent-reviews` | Agent 방식 Drift 리뷰 |
@@ -194,7 +195,7 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
 
 ## 10. 에이전트 등록
 
-화면에서 선택해 실행할 에이전트는 `backend/agents/registry.json`에 등록합니다. 현재 번들된 샘플 에이전트는 `sample-travel-assistant`로 등록되어 있습니다.
+화면에서 선택해 실행할 에이전트는 프론트엔드의 `Register Agent` 폼 또는 `POST /v1/agents` API로 등록합니다. 등록 정보는 기본적으로 `backend/agents/registry.json`에 저장되며, `DRIFTGUARD_AGENT_REGISTRY` 환경변수로 저장 위치를 바꿀 수 있습니다. 현재 번들된 샘플 에이전트는 `sample-travel-assistant`로 등록되어 있습니다.
 
 등록 형식:
 
@@ -211,6 +212,25 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
   ],
   "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
 }
+```
+
+API 등록 예시:
+
+```bash
+curl -X POST http://127.0.0.1:17321/v1/agents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "custom-agent",
+    "name": "Custom Agent",
+    "runtime": "python_module",
+    "working_directory": "sample_agent",
+    "python": ".venv/bin/python",
+    "module": "sample_agent.travel_agent",
+    "scenarios": [
+      {"id": "demo", "label": "Demo", "input": "scenarios/seoul_weekend.json"}
+    ],
+    "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
+  }'
 ```
 
 등록된 에이전트는 다음 CLI 계약을 지원해야 합니다.

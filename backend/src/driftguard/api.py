@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -94,6 +95,20 @@ def openapi_schema() -> JsonDict:
                             "description": "Registered agent list",
                             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AgentRegistryResponse"}}},
                         }
+                    },
+                },
+                "post": {
+                    "summary": "Register or update a runnable agent",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AgentRegistrationRequest"}}},
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Registered agent",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AgentRegistrationResponse"}}},
+                        },
+                        "400": {"$ref": "#/components/responses/Error"},
                     },
                 }
             },
@@ -339,6 +354,42 @@ def openapi_schema() -> JsonDict:
                         }
                     },
                 },
+                "AgentRegistrationRequest": {
+                    "type": "object",
+                    "required": ["id", "name", "working_directory", "module", "scenarios"],
+                    "properties": {
+                        "id": {"type": "string"},
+                        "name": {"type": "string"},
+                        "description": {"type": "string"},
+                        "runtime": {"type": "string", "enum": ["python_module"], "default": "python_module"},
+                        "working_directory": {"type": "string"},
+                        "python": {"type": "string", "default": ".venv/bin/python"},
+                        "module": {"type": "string"},
+                        "scenarios": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["id", "input"],
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "label": {"type": "string"},
+                                    "input": {"type": "string"},
+                                },
+                            },
+                        },
+                        "drift_modes": {
+                            "type": "array",
+                            "items": {"type": "string", "enum": ["none", "goal", "tool", "memory", "handoff"]},
+                        },
+                    },
+                },
+                "AgentRegistrationResponse": {
+                    "type": "object",
+                    "properties": {
+                        "agent": {"type": "object", "additionalProperties": True},
+                        "created": {"type": "boolean"},
+                    },
+                },
                 "SampleAgentRunResult": {
                     "type": "object",
                     "properties": {
@@ -494,8 +545,15 @@ def backend_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def agent_registry_path() -> Path:
+    configured = os.environ.get("DRIFTGUARD_AGENT_REGISTRY")
+    if configured:
+        return Path(configured).expanduser()
+    return backend_root() / "agents" / "registry.json"
+
+
 def load_agent_registry() -> list[JsonDict]:
-    registry_path = backend_root() / "agents" / "registry.json"
+    registry_path = agent_registry_path()
     if not registry_path.exists():
         return []
     data = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -503,6 +561,12 @@ def load_agent_registry() -> list[JsonDict]:
     if not isinstance(agents, list):
         raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Agent registry must contain an agents list")
     return agents
+
+
+def save_agent_registry(agents: list[JsonDict]) -> None:
+    registry_path = agent_registry_path()
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path.write_text(json.dumps({"agents": agents}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def public_agent(agent: JsonDict) -> JsonDict:
@@ -518,6 +582,94 @@ def public_agent(agent: JsonDict) -> JsonDict:
 
 def handle_agent_list() -> JsonDict:
     return {"agents": [public_agent(agent) for agent in load_agent_registry()]}
+
+
+def _validate_relative_path(value: str, field: str) -> None:
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ApiError(HTTPStatus.BAD_REQUEST, f"{field} must be a relative path inside backend")
+
+
+def validate_agent_registration(data: JsonDict) -> JsonDict:
+    required = ["id", "name", "working_directory", "module", "scenarios"]
+    missing = [field for field in required if not data.get(field)]
+    if missing:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Missing required agent fields", {"missing": missing})
+
+    agent_id = str(data["id"]).strip()
+    name = str(data["name"]).strip()
+    module = str(data["module"]).strip()
+    if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{1,63}", agent_id):
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Agent id must be 2-64 chars using letters, numbers, dot, underscore, or dash")
+    if not name:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Agent name is required")
+    if not module:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Agent module is required")
+    runtime = str(data.get("runtime", "python_module"))
+    if runtime != "python_module":
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Only python_module runtime is supported")
+
+    working_directory = str(data["working_directory"]).strip()
+    python = str(data.get("python", ".venv/bin/python")).strip()
+    _validate_relative_path(working_directory, "working_directory")
+    _validate_relative_path(python, "python")
+
+    scenarios = data.get("scenarios")
+    if not isinstance(scenarios, list) or not scenarios:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "scenarios must be a non-empty list")
+    normalized_scenarios: list[JsonDict] = []
+    seen_scenarios: set[str] = set()
+    for item in scenarios:
+        if not isinstance(item, dict):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "Each scenario must be an object")
+        scenario_id = str(item.get("id", "")).strip()
+        scenario_input = str(item.get("input", "")).strip()
+        if not scenario_id or not scenario_input:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "Each scenario requires id and input")
+        if scenario_id in seen_scenarios:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "Scenario ids must be unique", {"scenario": scenario_id})
+        _validate_relative_path(scenario_input, "scenario input")
+        seen_scenarios.add(scenario_id)
+        normalized_scenarios.append({
+            "id": scenario_id,
+            "label": str(item.get("label") or scenario_id),
+            "input": scenario_input,
+        })
+
+    allowed_drift_modes = {"none", "goal", "tool", "memory", "handoff"}
+    drift_modes = data.get("drift_modes") or ["none", "goal", "tool", "memory", "handoff"]
+    if not isinstance(drift_modes, list) or not drift_modes:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "drift_modes must be a non-empty list")
+    invalid_modes = [mode for mode in drift_modes if mode not in allowed_drift_modes]
+    if invalid_modes:
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported drift_modes", {"invalid": invalid_modes})
+
+    return {
+        "id": agent_id,
+        "name": name,
+        "description": str(data.get("description", "")).strip(),
+        "runtime": runtime,
+        "working_directory": working_directory,
+        "python": python,
+        "module": module,
+        "scenarios": normalized_scenarios,
+        "drift_modes": list(dict.fromkeys(str(mode) for mode in drift_modes)),
+    }
+
+
+def handle_agent_registration(data: JsonDict) -> JsonDict:
+    agent = validate_agent_registration(data)
+    agents = load_agent_registry()
+    created = True
+    for idx, existing in enumerate(agents):
+        if existing.get("id") == agent["id"]:
+            agents[idx] = agent
+            created = False
+            break
+    if created:
+        agents.append(agent)
+    save_agent_registry(agents)
+    return {"agent": public_agent(agent), "created": created}
 
 
 def _find_agent(agent_id: str) -> JsonDict:
@@ -679,6 +831,7 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                     "GET /docs",
                     "GET /openapi.json",
                     "GET /v1/agents",
+                    "POST /v1/agents",
                     "POST /v1/agent-runs",
                     "POST /v1/evaluations",
                     "POST /v1/agent-reviews",
@@ -713,6 +866,9 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/v1/agent-runs":
                 _json_response(self, HTTPStatus.OK, handle_registered_agent_run(data))
+                return
+            if parsed.path == "/v1/agents":
+                _json_response(self, HTTPStatus.OK, handle_agent_registration(data))
                 return
             raise ApiError(HTTPStatus.NOT_FOUND, f"Unknown endpoint: {parsed.path}")
         except ApiError as exc:

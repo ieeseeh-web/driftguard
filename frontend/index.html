@@ -16,7 +16,8 @@
         <span>DriftGuard</span>
       </div>
       <nav class="nav-links" aria-label="Primary">
-        <a href="#console">Console</a>
+        <a id="consoleNav" class="active" href="#console">Console</a>
+        <a id="agentRegistryNav" href="#agent-registry">Agent Registry</a>
         <a href="#result">Result</a>
         <a id="swaggerLink" href="http://127.0.0.1:17321/docs" target="_blank" rel="noreferrer">Swagger</a>
       </nav>
@@ -29,7 +30,7 @@
       </div>
     </header>
 
-    <main id="console" class="shell">
+    <main class="shell">
       <section class="overview-band" aria-label="DriftGuard status">
         <div>
           <p class="eyebrow">Agent Drift Guardrail</p>
@@ -51,7 +52,7 @@
         </div>
       </section>
 
-      <section class="workspace">
+      <section id="console" class="workspace app-view active">
         <aside class="sidebar" aria-label="Evaluation options">
           <div class="section-heading">
             <span>Mode</span>
@@ -100,6 +101,10 @@
             <button id="runRegisteredAgent" class="button-primary" type="button">
               <i data-lucide="bot"></i>
               Run Agent
+            </button>
+            <button id="openAgentRegistry" class="button-tertiary" type="button">
+              <i data-lucide="plus"></i>
+              Register Agent
             </button>
           </div>
         </aside>
@@ -158,6 +163,148 @@
 
           <div id="summaryView" class="summary-view"></div>
           <pre id="jsonView" class="json-view hidden"></pre>
+        </section>
+      </section>
+
+      <section id="agent-registry" class="agent-registry app-view" aria-label="Agent registration">
+        <div class="registry-main">
+          <section class="registry-panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Agent Registry</p>
+                <h2>Register Agent</h2>
+              </div>
+              <button id="useSampleTemplate" class="button-tertiary" type="button">
+                <i data-lucide="wand-sparkles"></i>
+                Sample
+              </button>
+            </div>
+
+            <div class="form-section">
+              <div>
+                <p class="section-heading">Basic</p>
+                <p class="helper-text">화면에서 선택할 에이전트 식별 정보입니다.</p>
+              </div>
+              <div class="form-grid two-col">
+                <label>
+                  <span class="field-label">Agent ID</span>
+                  <input id="newAgentId" class="text-input" type="text" placeholder="my-agent">
+                </label>
+                <label>
+                  <span class="field-label">Name</span>
+                  <input id="newAgentName" class="text-input" type="text" placeholder="My Agent">
+                </label>
+              </div>
+              <label>
+                <span class="field-label">Description</span>
+                <input id="newAgentDescription" class="text-input" type="text" placeholder="Optional short note">
+              </label>
+            </div>
+
+            <div class="form-section">
+              <div>
+                <p class="section-heading">Runtime</p>
+                <p class="helper-text">백엔드 기준 상대경로와 Python 모듈 실행 정보를 입력합니다.</p>
+              </div>
+              <div class="form-grid two-col">
+                <label>
+                  <span class="field-label">Workdir</span>
+                  <input id="newAgentWorkdir" class="text-input" type="text" placeholder="sample_agent">
+                </label>
+                <label>
+                  <span class="field-label">Python</span>
+                  <input id="newAgentPython" class="text-input" type="text" value=".venv/bin/python">
+                </label>
+              </div>
+              <label>
+                <span class="field-label">Module</span>
+                <input id="newAgentModule" class="text-input" type="text" placeholder="sample_agent.travel_agent">
+              </label>
+            </div>
+
+            <div class="form-section">
+              <div>
+                <p class="section-heading">Scenario</p>
+                <p class="helper-text">첫 테스트에 사용할 입력 파일입니다. 추가 시나리오는 등록 후 registry JSON에서 확장할 수 있습니다.</p>
+              </div>
+              <div class="form-grid two-col">
+                <label>
+                  <span class="field-label">Scenario ID</span>
+                  <input id="newAgentScenario" class="text-input" type="text" placeholder="seoul_weekend">
+                </label>
+                <label>
+                  <span class="field-label">Scenario Input</span>
+                  <input id="newAgentScenarioInput" class="text-input" type="text" placeholder="scenarios/seoul_weekend.json">
+                </label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div>
+                <p class="section-heading">Policy Coverage</p>
+                <p class="helper-text">이 에이전트로 테스트할 drift mode를 쉼표로 구분합니다.</p>
+              </div>
+              <input id="newAgentDriftModes" class="text-input" type="text" value="none,goal,tool,memory,handoff">
+            </div>
+
+            <div class="registry-actions">
+              <button id="registerAgent" class="button-primary" type="button">
+                <i data-lucide="plus"></i>
+                Register Agent
+              </button>
+              <button id="previewAgentPayload" class="button-secondary" type="button">
+                <i data-lucide="braces"></i>
+                Preview JSON
+              </button>
+            </div>
+            <p id="registryMessage" class="form-error" role="alert"></p>
+          </section>
+
+          <aside class="registry-panel guide-panel" aria-label="Agent connection guide">
+            <div>
+              <p class="eyebrow">Integration Guide</p>
+              <h2>Agent Requirements</h2>
+            </div>
+
+            <div class="guide-list">
+              <div>
+                <strong>CLI contract</strong>
+                <p>에이전트 모듈은 `python -m module --input scenario.json --drift-mode mode --output result.json --review-output review.json` 형태로 실행되어야 합니다.</p>
+              </div>
+              <div>
+                <strong>Agent result</strong>
+                <p>`--output` 파일에는 에이전트 실행 결과 JSON을 저장합니다. 화면의 JSON 탭에서 원본 결과를 확인할 수 있습니다.</p>
+              </div>
+              <div>
+                <strong>Review request</strong>
+                <p>`--review-output` 파일에는 DriftGuard `POST /v1/agent-reviews`에 보낼 요청 JSON을 저장해야 합니다.</p>
+              </div>
+              <div>
+                <strong>Paths</strong>
+                <p>`working_directory`, `python`, `scenario input`은 모두 backend 폴더 기준 상대경로여야 합니다.</p>
+              </div>
+            </div>
+
+            <div class="template-tabs" role="tablist" aria-label="Agent templates">
+              <button class="segmented-tab active" type="button" data-template="registry">Registry</button>
+              <button class="segmented-tab" type="button" data-template="cli">CLI</button>
+              <button class="segmented-tab" type="button" data-template="review">Review</button>
+            </div>
+            <pre id="agentTemplateView" class="json-view template-view"></pre>
+          </aside>
+        </div>
+
+        <section class="registered-list-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Available Agents</p>
+              <h2>Registered Agents</h2>
+            </div>
+            <button id="refreshAgents" class="icon-button" type="button" aria-label="Refresh agents" title="Refresh agents">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+          <div id="registeredAgentList" class="agent-list"></div>
         </section>
       </section>
     </main>

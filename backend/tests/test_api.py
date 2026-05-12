@@ -1,7 +1,10 @@
 import http.client
 import json
+import os
+import tempfile
 import threading
 import unittest
+from pathlib import Path
 
 from driftguard.api import create_server
 
@@ -46,6 +49,7 @@ class ApiTests(unittest.TestCase):
         self.assertIn("POST /v1/evaluations", data["endpoints"])
         self.assertIn("GET /docs", data["endpoints"])
         self.assertIn("GET /v1/agents", data["endpoints"])
+        self.assertIn("POST /v1/agents", data["endpoints"])
         self.assertIn("POST /v1/agent-runs", data["endpoints"])
 
     def test_openapi_schema(self):
@@ -63,6 +67,61 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(data["agents"])
         self.assertEqual(data["agents"][0]["id"], "sample-travel-assistant")
+
+    def test_agent_registration_creates_agent(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            previous_registry = os.environ.get("DRIFTGUARD_AGENT_REGISTRY")
+            os.environ["DRIFTGUARD_AGENT_REGISTRY"] = str(Path(tmp_dir) / "registry.json")
+            try:
+                payload = {
+                    "id": "custom-agent",
+                    "name": "Custom Agent",
+                    "runtime": "python_module",
+                    "working_directory": "sample_agent",
+                    "python": ".venv/bin/python",
+                    "module": "sample_agent.travel_agent",
+                    "scenarios": [
+                        {"id": "demo", "label": "Demo", "input": "scenarios/seoul_weekend.json"}
+                    ],
+                    "drift_modes": ["none", "tool"],
+                }
+                status, data = self.request("POST", "/v1/agents", payload)
+                self.assertEqual(status, 200)
+                self.assertTrue(data["created"])
+                self.assertEqual(data["agent"]["id"], "custom-agent")
+
+                status, data = self.request("GET", "/v1/agents")
+                self.assertEqual(status, 200)
+                self.assertEqual(len(data["agents"]), 1)
+                self.assertEqual(data["agents"][0]["name"], "Custom Agent")
+            finally:
+                if previous_registry is None:
+                    os.environ.pop("DRIFTGUARD_AGENT_REGISTRY", None)
+                else:
+                    os.environ["DRIFTGUARD_AGENT_REGISTRY"] = previous_registry
+
+    def test_agent_registration_rejects_parent_paths(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            previous_registry = os.environ.get("DRIFTGUARD_AGENT_REGISTRY")
+            os.environ["DRIFTGUARD_AGENT_REGISTRY"] = str(Path(tmp_dir) / "registry.json")
+            try:
+                status, data = self.request("POST", "/v1/agents", {
+                    "id": "unsafe-agent",
+                    "name": "Unsafe Agent",
+                    "runtime": "python_module",
+                    "working_directory": "../outside",
+                    "module": "sample_agent.travel_agent",
+                    "scenarios": [
+                        {"id": "demo", "input": "scenarios/seoul_weekend.json"}
+                    ],
+                })
+                self.assertEqual(status, 400)
+                self.assertEqual(data["error"]["code"], "bad_request")
+            finally:
+                if previous_registry is None:
+                    os.environ.pop("DRIFTGUARD_AGENT_REGISTRY", None)
+                else:
+                    os.environ["DRIFTGUARD_AGENT_REGISTRY"] = previous_registry
 
     def test_swagger_docs_html(self):
         status, content_type, body = self.request_raw("GET", "/docs")
