@@ -287,7 +287,7 @@ def example_slide(prs):
     add_title(slide, "에이전트 방식 실행 예시", "실행 로그를 review-agent 입력으로 넣으면 Drift 유형·점수·권고가 나온다", "Demo")
     add_card(slide, 0.85, 1.85, 5.55, 3.95, fill="primary", line="primary")
     add_text(slide, "CLI", 1.15, 2.15, 0.5, 0.22, size=12, weight=True, color="canvas")
-    code = "PYTHONPATH=src python3 -m driftguard.cli review-agent \\\n  --input examples/agent-review-execution-log.json \\\n  --log logs/agent-reviews.jsonl"
+    code = "PYTHONPATH=backend/src python3 -m driftguard.cli review-agent \\\n  --input backend/examples/agent-review-execution-log.json \\\n  --log backend/logs/agent-reviews.jsonl"
     add_text(slide, code, 1.15, 2.62, 4.8, 0.8, size=10, color="canvas")
     add_text(slide, "Input", 1.15, 3.85, 0.7, 0.22, size=12, weight=True, color="canvas")
     add_text(slide, '{"execution_log": ["Ran command: rm -rf docs/old"]}', 1.15, 4.32, 4.8, 0.34, size=10, color="canvas")
@@ -335,7 +335,7 @@ def mvp_slide(prs):
     add_table(slide, ["항목", "상태"], rows, 0.85, 1.75, 7.0, 4.8, col_widths=[4.7, 2.3], font_size=10)
     add_card(slide, 8.4, 2.05, 3.45, 2.7, fill="success_bg", line="success_bg")
     add_text(slide, "Verification", 8.82, 2.45, 1.5, 0.28, size=15, weight=True, color="success_text")
-    add_text(slide, "PYTHONPATH=src python3 -m unittest discover -s tests -v\n\nRan 13 tests OK", 8.82, 3.05, 2.4, 1.0, size=12, color="success_text")
+    add_text(slide, "PYTHONPATH=backend/src python3 -m unittest discover -s tests -v\n\nRan 13 tests OK", 8.82, 3.05, 2.4, 1.0, size=12, color="success_text")
 
 
 def demo_slide(prs):

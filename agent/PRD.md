@@ -133,7 +133,7 @@ DriftGuard Agent는 Drift를 아래 유형으로 분류해야 한다.
 ```
 
 ### FR-6. 기존 DriftGuard 평가 로직 연동
-기존 `src/driftguard/evaluator.py`, `policy.py`, CLI 결과를 DriftGuard Agent의 보조 신호로 사용할 수 있어야 한다.
+기존 `backend/src/driftguard/evaluator.py`, `policy.py`, CLI 결과를 DriftGuard Agent의 보조 신호로 사용할 수 있어야 한다.
 
 - Rule-based 점수는 빠른 1차 필터로 사용
 - AI Agent 평가는 설명, 맥락 판단, 가이드 생성에 사용

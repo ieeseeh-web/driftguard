@@ -193,9 +193,9 @@ flowchart TD
 
 **CLI 예시**
 ```bash
-PYTHONPATH=src python3 -m driftguard.cli review-agent \
-  --input examples/agent-review-execution-log.json \
-  --log logs/agent-reviews.jsonl
+PYTHONPATH=backend/src python3 -m driftguard.cli review-agent \
+  --input backend/examples/agent-review-execution-log.json \
+  --log backend/logs/agent-reviews.jsonl
 ```
 
 **입력 예시**
@@ -276,7 +276,7 @@ Phase 4: AgentOps Dashboard + Policy Management
 
 **검증 문구**
 ```text
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+PYTHONPATH=backend/src python3 -m unittest discover -s tests -v
 Ran 13 tests OK
 ```
 

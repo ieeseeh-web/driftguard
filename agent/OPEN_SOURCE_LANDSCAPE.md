@@ -455,15 +455,15 @@ DriftGuard 관점에서 바로 연결하기 좋은 조합은 다음과 같다.
 
 ### 8.2 코드
 
-- `src/driftguard/exporters/langfuse.py`
+- `backend/src/driftguard/exporters/langfuse.py`
   - DriftGuard review result를 Langfuse score/trace metadata로 export
-- `src/driftguard/exporters/phoenix.py`
+- `backend/src/driftguard/exporters/phoenix.py`
   - OpenTelemetry/OpenInference span attribute로 export
-- `src/driftguard/metrics/deepeval_adapter.py`
+- `backend/src/driftguard/metrics/deepeval_adapter.py`
   - DriftGuard score를 DeepEval custom metric으로 변환
-- `src/driftguard/guards/validators.py`
+- `backend/src/driftguard/guards/validators.py`
   - Guardrails AI와 유사한 validator chain 구현
-- `examples/promptfoo/driftguard.yaml`
+- `backend/examples/promptfoo/driftguard.yaml`
   - promptfoo 기반 drift regression scenario
 
 ---

@@ -15,7 +15,7 @@
 프로젝트 루트에서 별도 venv 사용을 권장합니다.
 
 ```bash
-cd ~/workspaces/driftguard/sample_agent
+cd ~/workspaces/driftguard/backend/sample_agent
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -61,10 +61,10 @@ python -m sample_agent.travel_agent \
 
 샘플 에이전트가 만든 `--review-output` 파일은 DriftGuard `review-agent` 입력 스키마와 호환됩니다.
 
-프로젝트 루트에서 실행:
+백엔드 루트에서 실행:
 
 ```bash
-cd ~/workspaces/driftguard
+cd ~/workspaces/driftguard/backend
 PYTHONPATH=src python3 -m driftguard.cli review-agent \
   --input sample_agent/outputs/tool_drift_review.json \
   --format json \

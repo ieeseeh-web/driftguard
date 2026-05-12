@@ -12,8 +12,8 @@ DriftGuard의 Agent-as-a-Judge 확장은 도구 기반 검증을 목표로 하�
 
 ## 현재 구현
 
-- 구현 파일: `src/driftguard/verifier.py`
-- 통합 지점: `src/driftguard/agent_review.py`
+- 구현 파일: `backend/src/driftguard/verifier.py`
+- 통합 지점: `backend/src/driftguard/agent_review.py`
 - 결과 위치:
   - `verification_status`
   - `metadata.sandbox_verification`

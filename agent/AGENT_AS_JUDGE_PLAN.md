@@ -84,7 +84,7 @@ Agent Review Result
 
 초기 구현 방향:
 
-- 현재 `src/driftguard/agent_review.py`의 단일 평가 흐름을 내부 함수 단위로 분리한다.
+- 현재 `backend/src/driftguard/agent_review.py`의 단일 평가 흐름을 내부 함수 단위로 분리한다.
 - 외부 API 서버는 아직 만들지 않고 CLI-first로 유지한다.
 
 ### 4.2 Planner
@@ -172,7 +172,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 ### 5.1 Evaluation Plan
 
-새 schema 후보: `schema/agent-review-plan.schema.json`
+새 schema 후보: `backend/schema/agent-review-plan.schema.json`
 
 ```json
 {
@@ -191,7 +191,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 ### 5.2 Judge Result
 
-새 schema 후보: `schema/agent-judge-result.schema.json`
+새 schema 후보: `backend/schema/agent-judge-result.schema.json`
 
 ```json
 {
@@ -267,7 +267,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 성공 기준:
 
-- `review-agent --input examples/agent-review-execution-log.json` 결과에 evidence가 포함됨
+- `review-agent --input backend/examples/agent-review-execution-log.json` 결과에 evidence가 포함됨
 - 고위험 tool call은 evidence와 함께 `ask_user` 또는 `stop`으로 분류됨
 
 ### Phase 4. Optional LLM Judge Adapter
@@ -293,7 +293,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 작업:
 
 1. `--mode deterministic|llm|hybrid` 옵션 검토
-2. `prompts/driftguard-agent-review.md`를 judge별 prompt로 분리
+2. `backend/prompts/driftguard-agent-review.md`를 judge별 prompt로 분리
 3. JSON repair/fallback 정책 추가
 4. 모델 독립 adapter 정의
 
@@ -307,7 +307,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 현재 구현:
 
-- `src/driftguard/verifier.py`가 실행형/외부 영향 가능 verifier를 `blocked`로 분류한다.
+- `backend/src/driftguard/verifier.py`가 실행형/외부 영향 가능 verifier를 `blocked`로 분류한다.
 - `python_executor`, `exec`, `shell`, `api_caller`, `browser_agent`, `sql_runner` 등은 sandbox 전까지 실행하지 않는다.
 - 결과는 `verification_status`와 `metadata.sandbox_verification`에 기록된다.
 - 상세 정책은 `agent/SANDBOX_VERIFICATION.md`에 문서화했다.
@@ -335,7 +335,7 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 현재 구현:
 
 - `review-agent --audit-log` 옵션을 제공한다.
-- `src/driftguard/audit.py`가 compact observability record를 생성한다.
+- `backend/src/driftguard/audit.py`가 compact observability record를 생성한다.
 - full result log(`--log`)와 compact audit log(`--audit-log`)를 분리했다.
 - 상세 필드는 `agent/AUDIT_LOGGING.md`에 문서화했다.
 

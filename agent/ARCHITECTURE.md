@@ -61,7 +61,7 @@ flowchart TD
 
 ### 4.1 Agent Review Request
 
-평가 대상 입력이다. 현재 `schema/agent-review-request.schema.json`으로 정의한다.
+평가 대상 입력이다. 현재 `backend/schema/agent-review-request.schema.json`으로 정의한다.
 
 주요 필드:
 
@@ -86,7 +86,7 @@ flowchart TD
 
 현재 구현 위치:
 
-- `src/driftguard/agent_review.py`
+- `backend/src/driftguard/agent_review.py`
 - `_artifact_text()`
 - `AgentReviewRequest.from_dict()`
 
@@ -104,8 +104,8 @@ flowchart TD
 
 현재 구현 위치:
 
-- `src/driftguard/evaluator.py`
-- `src/driftguard/policy.py`
+- `backend/src/driftguard/evaluator.py`
+- `backend/src/driftguard/policy.py`
 
 ### 4.4 DriftGuard Agent
 
@@ -123,8 +123,8 @@ AI 에이전트 방식 평가의 중심이다.
 
 관련 파일:
 
-- `src/driftguard/agent_review.py`
-- `prompts/driftguard-agent-review.md`
+- `backend/src/driftguard/agent_review.py`
+- `backend/prompts/driftguard-agent-review.md`
 
 ### 4.5 Drift Type Classifier
 
@@ -180,7 +180,7 @@ Agent Drift를 아래 유형으로 분류한다.
 
 - `result_to_markdown()`
 - `result_to_dict()`
-- `review-agent --log logs/agent-reviews.jsonl`
+- `review-agent --log backend/logs/agent-reviews.jsonl`
 
 ---
 
@@ -296,15 +296,15 @@ handoff 메시지 재작성 가이드 제공
 
 | 아키텍처 요소 | 현재 파일 |
 |---|---|
-| Agent Review Request | `schema/agent-review-request.schema.json` |
-| Agent Review Result | `schema/agent-review-result.schema.json` |
-| Rule-based Evaluator | `src/driftguard/evaluator.py` |
-| Policy Engine | `src/driftguard/policy.py` |
-| DriftGuard Agent | `src/driftguard/agent_review.py` |
-| CLI Entry | `src/driftguard/cli.py` |
-| Agent Prompt | `prompts/driftguard-agent-review.md` |
-| Samples | `examples/agent-review-*.json` |
-| Tests | `tests/test_agent_review.py` |
+| Agent Review Request | `backend/schema/agent-review-request.schema.json` |
+| Agent Review Result | `backend/schema/agent-review-result.schema.json` |
+| Rule-based Evaluator | `backend/src/driftguard/evaluator.py` |
+| Policy Engine | `backend/src/driftguard/policy.py` |
+| DriftGuard Agent | `backend/src/driftguard/agent_review.py` |
+| CLI Entry | `backend/src/driftguard/cli.py` |
+| Agent Prompt | `backend/prompts/driftguard-agent-review.md` |
+| Samples | `backend/examples/agent-review-*.json` |
+| Tests | `backend/tests/test_agent_review.py` |
 
 ---
 

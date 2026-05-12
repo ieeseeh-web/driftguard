@@ -13,11 +13,11 @@
 | A-001 | done | 1 | 기존 PRD/문서/구현 분석 | `agent/CONTEXT.md`에 분석 결과 기록 |
 | A-002 | done | 1 | AI 에이전트 방식 PRD 작성 | `agent/PRD.md` 작성 |
 | A-003 | done | 1 | DriftGuard Agent 운영 지침 작성 | `agent/AGENT.md` 작성 |
-| A-004 | done | 1 | Agent Review 입력 스키마 정의 | `schema/agent-review-request.schema.json` 생성 |
-| A-005 | done | 1 | Agent Review 출력 스키마 정의 | `schema/agent-review-result.schema.json` 생성 |
-| A-006 | done | 2 | DriftGuard Agent 프롬프트 작성 | `prompts/driftguard-agent-review.md` 생성 |
+| A-004 | done | 1 | Agent Review 입력 스키마 정의 | `backend/schema/agent-review-request.schema.json` 생성 |
+| A-005 | done | 1 | Agent Review 출력 스키마 정의 | `backend/schema/agent-review-result.schema.json` 생성 |
+| A-006 | done | 2 | DriftGuard Agent 프롬프트 작성 | `backend/prompts/driftguard-agent-review.md` 생성 |
 | A-007 | done | 2 | Markdown 리포트 템플릿 작성 | `agent/templates/drift-report-template.md` 생성 |
-| A-008 | done | 2 | 샘플 평가 입력 작성 | `examples/agent-review-*.json` 3개 생성 |
+| A-008 | done | 2 | 샘플 평가 입력 작성 | `backend/examples/agent-review-*.json` 3개 생성 |
 | A-009 | done | 3 | CLI 명령 설계/구현 | `driftguard review-agent --input ...` 구현 |
 | A-010 | done | 3 | 기존 evaluator 결과를 보조 신호로 통합 | rule score + agent guidance 결합 |
 | A-011 | done | 4 | 테스트 케이스 추가 | agent review 테스트 3개 추가 |
@@ -25,7 +25,7 @@
 | A-013 | done | 3 | Handoff / execution_log 샘플 추가 | 샘플 2개와 평가 로직/테스트 추가 |
 | A-014 | done | 2 | Agent Architecture 문서 작성 | `agent/ARCHITECTURE.md` 작성 |
 | A-015 | done | 2 | 발표용 PPT 내용 정리 | `agent/PRESENTATION.md` 작성 |
-| A-016 | done | 2 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `sample_agent/` 생성 및 tool drift 실행 검증 |
+| A-016 | done | 2 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `backend/sample_agent/` 생성 및 tool drift 실행 검증 |
 
 ## Backlog
 - PR/코드리뷰용 Drift 평가 모드
@@ -46,8 +46,8 @@
 | AAJ-007 | done | 3 | EvidenceItem 추출 로직 추가 | execution log/tool call/handoff에서 evidence 추출 |
 | AAJ-008 | done | 3 | Markdown report에 judge breakdown 추가 | 사람 검토용 보고서에 judge별 판단과 근거 표시 |
 | AAJ-009 | done | 4 | Optional LLM/hybrid judge adapter 설계 | `--mode hybrid`는 deterministic fallback metadata를 남기고 LLM adapter 구성 전까지 안전하게 동작 |
-| AAJ-010 | done | 4 | Sandbox verifier 설계 | `src/driftguard/verifier.py` fail-closed boundary와 `agent/SANDBOX_VERIFICATION.md` 문서화 |
-| OBS-001 | done | 3 | Agent Review compact audit log 추가 | `--audit-log` 옵션, `src/driftguard/audit.py`, `agent/AUDIT_LOGGING.md` 작성 |
+| AAJ-010 | done | 4 | Sandbox verifier 설계 | `backend/src/driftguard/verifier.py` fail-closed boundary와 `agent/SANDBOX_VERIFICATION.md` 문서화 |
+| OBS-001 | done | 3 | Agent Review compact audit log 추가 | `--audit-log` 옵션, `backend/src/driftguard/audit.py`, `agent/AUDIT_LOGGING.md` 작성 |
 | OBS-002 | todo | 3 | OpenTelemetry/Langfuse/Phoenix export schema 설계 | audit record 기반 exporter mapping 문서 작성 |
 
 ## Blocked / Open Questions

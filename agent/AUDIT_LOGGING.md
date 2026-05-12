@@ -7,7 +7,7 @@ DriftGuard supports two JSONL logging styles for `review-agent`.
 Use `--log` when you want the full `AgentReviewResult` object.
 
 ```bash
-driftguard review-agent --input examples/agent-review-execution-log.json --log logs/agent-review-full.jsonl
+driftguard review-agent --input backend/examples/agent-review-execution-log.json --log backend/logs/agent-review-full.jsonl
 ```
 
 This is useful for debugging, replay, and detailed review, but it can be too large for dashboards.
@@ -18,11 +18,11 @@ Use `--audit-log` when you want an observability-friendly summary record.
 
 ```bash
 driftguard review-agent \
-  --input examples/agent-review-execution-log.json \
+  --input backend/examples/agent-review-execution-log.json \
   --audit-log logs/agent-review-audit.jsonl
 ```
 
-The compact audit record is produced by `src/driftguard/audit.py` and includes stable fields for filtering and later exporter adapters.
+The compact audit record is produced by `backend/src/driftguard/audit.py` and includes stable fields for filtering and later exporter adapters.
 
 ## Audit record fields
 

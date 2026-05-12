@@ -5,10 +5,10 @@
 |---|---|---|---|
 | 2026-05-12 | 기존 PRD 기반 Agent 방식 문서 작성 | `agent/AGENT.md`, `agent/PRD.md`, `agent/CONTEXT.md`, `agent/TASKS.md`, `agent/RUNBOOK.md`, `agent/OUTPUTS.md` 작성 | 파일 생성 및 라인 수 확인 |
 | 2026-05-12 | Agent Review 스키마/프롬프트/샘플 작성 | request/result JSON Schema, DriftGuard Agent 프롬프트, 샘플 3종 생성 | JSON 파싱 확인 및 기존 unittest 8개 통과 |
-| 2026-05-12 | `review-agent` CLI 구현 | `src/driftguard/agent_review.py`, CLI subcommand, 테스트 3개, README 사용법 추가 | 샘플 CLI 실행 확인 및 unittest 11개 통과 |
+| 2026-05-12 | `review-agent` CLI 구현 | `backend/src/driftguard/agent_review.py`, CLI subcommand, 테스트 3개, README 사용법 추가 | 샘플 CLI 실행 확인 및 unittest 11개 통과 |
 | 2026-05-12 | JSONL 로그와 handoff/execution_log 평가 강화 | `review-agent --log`, 샘플 2종, 위험 로그/handoff 감지 로직, 테스트 2개 추가 | JSON 파싱, 로그 1줄 저장/파싱, unittest 13개 통과 |
 | 2026-05-12 | Agent 아키텍처와 발표용 문서 작성 | `agent/ARCHITECTURE.md`, `agent/PRESENTATION.md` 작성 | 문서 라인 수 확인 및 unittest 13개 통과 |
-| 2026-05-12 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `sample_agent/`에 여행 비서 에이전트, 시나리오, README, requirements 추가 | venv 설치 후 tool drift 샘플 실행, DriftGuard review-agent로 critical/stop 확인, unittest 13개 통과 |
+| 2026-05-12 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `backend/sample_agent/`에 여행 비서 에이전트, 시나리오, README, requirements 추가 | venv 설치 후 tool drift 샘플 실행, DriftGuard review-agent로 critical/stop 확인, unittest 13개 통과 |
 
 ## Decisions
 - 기존 “LLM as a Judge 평가 시스템” 방향은 유지하되, 이번 개발 단위는 독립적인 **DriftGuard Agent**로 정의한다.
@@ -27,21 +27,21 @@
 - `agent/PRESENTATION.md`
 - `agent/memory/`
 - `agent/templates/`
-- `schema/agent-review-request.schema.json`
-- `schema/agent-review-result.schema.json`
-- `prompts/driftguard-agent-review.md`
-- `examples/agent-review-final-response.json`
-- `examples/agent-review-tool-call.json`
-- `examples/agent-review-memory-update.json`
-- `examples/agent-review-handoff.json`
-- `examples/agent-review-execution-log.json`
-- `src/driftguard/agent_review.py`
-- `tests/test_agent_review.py`
-- `sample_agent/README.md`
-- `sample_agent/requirements.txt`
-- `sample_agent/sample_agent/travel_agent.py`
-- `sample_agent/scenarios/seoul_weekend.json`
-- `sample_agent/scenarios/short_answer_today.json`
+- `backend/schema/agent-review-request.schema.json`
+- `backend/schema/agent-review-result.schema.json`
+- `backend/prompts/driftguard-agent-review.md`
+- `backend/examples/agent-review-final-response.json`
+- `backend/examples/agent-review-tool-call.json`
+- `backend/examples/agent-review-memory-update.json`
+- `backend/examples/agent-review-handoff.json`
+- `backend/examples/agent-review-execution-log.json`
+- `backend/src/driftguard/agent_review.py`
+- `backend/tests/test_agent_review.py`
+- `backend/sample_agent/README.md`
+- `backend/sample_agent/requirements.txt`
+- `backend/sample_agent/sample_agent/travel_agent.py`
+- `backend/sample_agent/scenarios/seoul_weekend.json`
+- `backend/sample_agent/scenarios/short_answer_today.json`
 
 ## Open Issues
 - 실제 LLM 호출을 MVP에 포함할지 결정 필요

@@ -29,10 +29,10 @@
 - `architecture.md`: 시스템 아키텍처
 - `feature-spec.md`: 기능 상세 명세
 - `mvp-tasks.md`: MVP 개발 태스크
-- `src/driftguard/evaluator.py`: rule-based evaluator
-- `src/driftguard/policy.py`: 정책 결정 로직
-- `src/driftguard/cli.py`: CLI 엔트리포인트
-- `tests/`: unittest 기반 테스트
+- `backend/src/driftguard/evaluator.py`: rule-based evaluator
+- `backend/src/driftguard/policy.py`: 정책 결정 로직
+- `backend/src/driftguard/cli.py`: CLI 엔트리포인트
+- `backend/tests/`: unittest 기반 테스트
 
 ## 4. 현재 구현 특징
 현재 구현은 LLM 호출 없이 rule-based 방식으로 평가한다.

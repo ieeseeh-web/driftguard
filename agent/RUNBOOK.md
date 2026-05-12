@@ -21,15 +21,15 @@ ls
 ## 3. 현재 테스트 실행
 ```bash
 cd ~/workspaces/driftguard
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+PYTHONPATH=backend/src python3 -m unittest discover -s tests -v
 ```
 
 ## 4. 기존 CLI 평가 실행
 ```bash
 cd ~/workspaces/driftguard
-PYTHONPATH=src python3 -m driftguard.cli evaluate --type goal --input examples/goal-ok.json
-PYTHONPATH=src python3 -m driftguard.cli evaluate --type tool --input examples/tool-risky.json --log logs/evaluations.jsonl
-PYTHONPATH=src python3 -m driftguard.cli evaluate --type memory --input examples/memory-risky.json
+PYTHONPATH=backend/src python3 -m driftguard.cli evaluate --type goal --input backend/examples/goal-ok.json
+PYTHONPATH=backend/src python3 -m driftguard.cli evaluate --type tool --input backend/examples/tool-risky.json --log backend/logs/evaluations.jsonl
+PYTHONPATH=backend/src python3 -m driftguard.cli evaluate --type memory --input backend/examples/memory-risky.json
 ```
 
 ## 5. Agent Review 권장 출력 형식
