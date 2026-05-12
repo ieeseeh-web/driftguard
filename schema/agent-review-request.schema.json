@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://driftguard.local/schema/agent-review-request.schema.json",
+  "title": "DriftGuard Agent Review Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["review_type", "user_request", "artifact"],
+  "properties": {
+    "review_type": {
+      "type": "string",
+      "enum": ["final_response", "tool_call", "memory_update", "plan", "handoff", "execution_log"]
+    },
+    "session_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "user_request": { "type": "string", "minLength": 1 },
+    "agent_role": { "type": "string" },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "explicit_instructions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "context_summary": { "type": "string" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "평가 대상 산출물. 응답, 계획, 도구 호출, 메모리 후보, 실행 로그 등을 담는다.",
+      "properties": {
+        "agent_plan": { "type": "string" },
+        "agent_output": { "type": "string" },
+        "current_goal": { "type": "string" },
+        "tool_name": { "type": "string" },
+        "tool_args": { "type": "object", "additionalProperties": true },
+        "expected_side_effects": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "candidate_memory": { "type": "string" },
+        "source_message": { "type": "string" },
+        "existing_memories": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "handoff_messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        },
+        "execution_log": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "high_risk_tools": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requires_confirmation_for_external_side_effects": { "type": "boolean" },
+        "memory_storage_default": {
+          "type": "string",
+          "enum": ["allow", "ask_user", "deny"]
+        }
+      }
+    },
+    "output_preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["markdown", "json", "markdown_with_json"]
+        },
+        "include_guidance": { "type": "boolean" },
+        "include_evidence": { "type": "boolean" }
+      }
+    }
+  }
+}

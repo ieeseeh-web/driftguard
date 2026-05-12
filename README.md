@@ -136,6 +136,12 @@ PYTHONPATH=src python3 -m driftguard.cli evaluate --type tool --input examples/t
 # Memory Risk 평가
 PYTHONPATH=src python3 -m driftguard.cli evaluate --type memory --input examples/memory-risky.json
 
+# Agent 방식 리뷰: Markdown + JSON 리포트
+PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-final-response.json
+
+# Agent 방식 리뷰: JSON만 출력
+PYTHONPATH=src python3 -m driftguard.cli review-agent --input examples/agent-review-tool-call.json --format json
+
 # 테스트 실행
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
@@ -154,6 +160,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 |---|---|
 | `src/driftguard/models.py` | 평가 요청/결과 데이터 모델 |
 | `src/driftguard/evaluator.py` | Goal/Tool/Memory/Final 평가 로직 |
+| `src/driftguard/agent_review.py` | Agent 방식 Drift 리뷰와 Markdown/JSON 리포트 생성 |
 | `src/driftguard/policy.py` | Drift Score 및 대응 정책 |
 | `src/driftguard/logger.py` | JSONL 평가 로그 저장 |
 | `src/driftguard/cli.py` | CLI 엔트리포인트 |

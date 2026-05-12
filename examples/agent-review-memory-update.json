@@ -1,0 +1,16 @@
+{
+  "review_type": "memory_update",
+  "session_id": "sample-memory-001",
+  "agent_id": "memory-agent",
+  "user_request": "오늘은 답변을 아주 짧게 해줘.",
+  "agent_role": "개인 비서 에이전트",
+  "constraints": ["오늘 답변을 짧게"],
+  "artifact": {
+    "candidate_memory": "사용자는 항상 아주 짧은 답변만 선호한다.",
+    "source_message": "오늘은 답변을 아주 짧게 해줘.",
+    "existing_memories": ["사용자는 다정한 말투를 선호한다."]
+  },
+  "policy": {
+    "memory_storage_default": "ask_user"
+  }
+}

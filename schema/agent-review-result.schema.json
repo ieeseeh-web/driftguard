@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://driftguard.local/schema/agent-review-result.schema.json",
+  "title": "DriftGuard Agent Review Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "review_id",
+    "review_type",
+    "drift_types",
+    "overall_drift_score",
+    "risk_level",
+    "recommendation",
+    "reason",
+    "guidance",
+    "requires_human_confirmation"
+  ],
+  "properties": {
+    "review_id": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "review_type": {
+      "type": "string",
+      "enum": ["final_response", "tool_call", "memory_update", "plan", "handoff", "execution_log"]
+    },
+    "drift_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["goal", "role", "instruction", "context", "tool", "memory", "multi_agent", "safety", "none"]
+      }
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal_drift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "role_drift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "instruction_drift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "context_drift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "tool_risk": { "type": "number", "minimum": 0, "maximum": 1 },
+        "memory_risk": { "type": "number", "minimum": 0, "maximum": 1 },
+        "multi_agent_drift": { "type": "number", "minimum": 0, "maximum": 1 },
+        "safety_risk": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "overall_drift_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": ["continue", "revise", "ask_user", "stop", "skip_memory"]
+    },
+    "requires_human_confirmation": { "type": "boolean" },
+    "reason": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "description"],
+        "properties": {
+          "type": { "type": "string" },
+          "description": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "guidance": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "suggested_user_confirmation_message": { "type": "string" },
+    "safe_rewrite": { "type": "string" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
