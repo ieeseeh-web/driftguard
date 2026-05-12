@@ -208,3 +208,36 @@ DriftGuard Agent는 Drift를 아래 유형으로 분류해야 한다.
 - 다중 에이전트 handoff 메시지 자동 검증
 - CI에서 에이전트 회귀 테스트 실행
 - Drift 발생 패턴별 프롬프트 개선 제안
+
+## 13. Agent-as-a-Judge 확장 방향
+
+최근 추가한 Agent-as-a-Judge 참고 자료를 기준으로 DriftGuard의 장기 방향은 단순 LLM Judge가 아니라 **계획·검증·근거·정책 판단을 수행하는 평가 에이전트**다.
+
+핵심 확장 원칙:
+
+- 최종 응답만 평가하지 않고 계획, 도구 호출, 실행 로그, 메모리 후보, handoff 메시지를 함께 본다.
+- 단일 점수 대신 judge별 finding, evidence, confidence, recommendation을 분리한다.
+- 가능한 경우 LLM 판단보다 실행 로그와 도구 결과 같은 검증 가능한 근거를 우선한다.
+- 고위험 도구 호출, 외부 상태 변경, 민감정보 처리는 보수적으로 `ask_user` 또는 `stop`을 권고한다.
+- MVP는 deterministic planner/judge/aggregator로 시작하고, LLM Judge는 선택적 hybrid mode로 도입한다.
+
+목표 구조:
+
+```text
+Agent Review Request
+  ↓
+Evaluation Orchestrator
+  ↓
+Planner
+  ↓
+Evidence / Tool Result Router
+  ↓
+Goal · Instruction · Tool · Memory · Safety Judges
+  ↓
+Aggregator / Policy Engine
+  ↓
+Evidence-based Agent Review Result
+```
+
+상세 계획은 `agent/AGENT_AS_JUDGE_PLAN.md`를 기준 문서로 사용한다.
+

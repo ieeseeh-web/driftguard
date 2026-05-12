@@ -550,3 +550,17 @@ DriftGuard 관점에서 바로 연결하기 좋은 조합은 다음과 같다.
 - SWE-bench: <https://github.com/SWE-bench/SWE-bench>
 - BrowserGym: <https://github.com/ServiceNow/BrowserGym>
 - agentic-benchmarks / ABC Checklist: <https://github.com/uiuc-kang-lab/agentic-benchmarks>
+
+## 12. Local Agent-as-a-Judge Reference Materials
+
+DriftGuard repo에는 Agent-as-a-Judge 확장 방향을 구체화하기 위한 내부 참고 자료가 추가되어 있다.
+
+| 파일 | 용도 |
+|---|---|
+| `agent/references/agent-as-a-judge-paper-summary.md` | Agent-as-a-Judge 개념, LLM-as-a-Judge 한계, 핵심 방법론 요약 |
+| `agent/references/agent-as-a-judge-prd.md` | Agentic Evaluation Platform 제품 요구사항 참고 |
+| `agent/references/agent-as-a-judge-development-guide.md` | Orchestrator, Planner, Tool Executor, Judge, Aggregator 구현 가이드 참고 |
+| `agent/AGENT_AS_JUDGE_PLAN.md` | 위 자료를 DriftGuard 맥락에 맞게 재구성한 실행 계획 |
+
+이 자료들은 외부 오픈소스 landscape와 별개로 DriftGuard의 자체 Agent-as-a-Judge 구현 방향을 정의하는 기준 문서로 사용한다.
+

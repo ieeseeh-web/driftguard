@@ -344,3 +344,68 @@ flowchart LR
 - 고위험 도구 호출은 보수적으로 `ask_user` 또는 `stop`으로 분류한다.
 - DriftGuard Agent의 판단은 보조 판단이며, 고위험 작업에서는 사용자 승인이 최종 게이트다.
 - rule-based evaluator와 AI Agent 판단이 충돌하면 안전 우선 정책을 적용한다.
+
+## 13. Agent-as-a-Judge Target Architecture
+
+DriftGuard Agent의 차기 구조는 Agent-as-a-Judge 패턴을 따른다. 현재 `review-agent`는 rule-based evaluator와 템플릿형 guidance를 결합한 MVP이며, 다음 단계에서는 내부 흐름을 명시적인 planner, judge, aggregator로 분리한다.
+
+```mermaid
+flowchart TD
+    Req[Agent Review Request] --> Orch[Evaluation Orchestrator]
+    Orch --> Plan[Deterministic Planner]
+    Plan --> Evidence[Evidence Router]
+    Evidence --> Rule[Rule-based Signals]
+    Evidence --> Log[Execution Log Analyzer]
+    Evidence --> Tool[Tool Result Verifier]
+    Evidence --> Mem[Memory Policy Checker]
+
+    Rule --> GJ[Goal Judge]
+    Log --> IJ[Instruction Judge]
+    Tool --> TJ[Tool Judge]
+    Mem --> MJ[Memory Judge]
+    Evidence --> SJ[Safety Judge]
+
+    GJ --> Agg[Aggregator / Policy Engine]
+    IJ --> Agg
+    TJ --> Agg
+    MJ --> Agg
+    SJ --> Agg
+
+    Agg --> Result[Agent Review Result]
+    Result --> MD[Markdown Report]
+    Result --> JSON[Structured JSON]
+    Result --> Audit[JSONL Audit Log]
+```
+
+### 13.1 Planner
+
+Planner는 평가 대상의 `review_type`과 입력 필드를 바탕으로 필요한 check와 rubric을 결정한다. 초기 버전은 deterministic rule로 구현해 재현성을 유지한다.
+
+### 13.2 Judge Modules
+
+Judge는 실제 별도 에이전트로 분리하기 전에 함수/클래스 단위로 시작한다.
+
+| Module | 평가 대상 |
+|---|---|
+| Goal Judge | 원본 목표 대비 현재 행동/응답 |
+| Instruction Judge | 명시 지시, 제약, 범위 준수 |
+| Tool Judge | 도구 호출 필요성, 위험도, 승인 필요성 |
+| Memory Judge | 장기 저장 가치, 민감도, 과도한 일반화 |
+| Safety Judge | 외부 영향, 개인정보, 되돌리기 어려운 행동 |
+| Evidence Judge | 판단 근거의 충분성 및 로그와의 일치성 |
+
+### 13.3 Aggregator
+
+Aggregator는 judge별 결과를 통합하되 score와 confidence를 분리한다. 고위험 작업에서 rule signal과 LLM/hybrid judge가 충돌하면 보수적인 recommendation을 선택한다.
+
+### 13.4 Tool Verification Boundary
+
+Agent-as-a-Judge가 도구를 사용할 수 있더라도, DriftGuard의 기본 원칙은 안전한 검증이다.
+
+- 읽기 전용 검증 우선
+- sandbox 없는 code execution 금지
+- 외부 API 호출은 명시적 opt-in
+- timeout, resource quota, network restriction 필요
+
+상세 구현 로드맵은 `agent/AGENT_AS_JUDGE_PLAN.md`에 있다.
+
