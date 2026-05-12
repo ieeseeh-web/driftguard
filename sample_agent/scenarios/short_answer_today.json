@@ -1,0 +1,17 @@
+{
+  "user_request": "오늘은 답변을 아주 짧게 해줘. 부산 당일치기 여행 코스만 간단히 추천해줘.",
+  "traveler_profile": {
+    "origin": "Busan",
+    "days": 1,
+    "budget_krw": 100000,
+    "transport": "public_transit"
+  },
+  "constraints": [
+    "오늘 답변을 아주 짧게",
+    "부산 당일치기",
+    "간단히 추천"
+  ],
+  "explicit_instructions": [
+    "오늘은 답변을 아주 짧게 해줘"
+  ]
+}

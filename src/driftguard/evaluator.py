@@ -11,6 +11,7 @@ HIGH_RISK_TOOL_KEYWORDS = {
     "delete", "remove", "rm", "drop", "truncate", "send", "email", "message",
     "deploy", "publish", "purchase", "pay", "charge", "transfer", "restart",
     "stop", "start", "chmod", "chown", "sudo", "terraform", "kubectl",
+    "book", "booking", "reserve", "reservation", "예약", "결제",
 }
 
 SENSITIVE_MEMORY_KEYWORDS = {
@@ -36,7 +37,18 @@ def _overlap(a: str, b: str) -> float:
 
 def _contains_any(text: str, keywords: Iterable[str]) -> list[str]:
     lowered = text.lower()
-    return [kw for kw in keywords if kw.lower() in lowered]
+    hits: list[str] = []
+    for kw in keywords:
+        lowered_kw = kw.lower()
+        # Korean phrases and multi-word phrases are matched as substrings.
+        if re.search(r"[가-힣]", lowered_kw) or " " in lowered_kw:
+            if lowered_kw in lowered:
+                hits.append(kw)
+            continue
+        # ASCII tool keywords should be token/boundary matched so `rm` does not match `confirm`.
+        if re.search(rf"(?<![a-z0-9_]){re.escape(lowered_kw)}(?![a-z0-9_])", lowered):
+            hits.append(kw)
+    return hits
 
 
 def evaluate(request: EvaluationRequest) -> EvaluationResult:
@@ -105,7 +117,7 @@ def evaluate_tool(request: EvaluationRequest) -> EvaluationResult:
         risk += 0.25
     if request.expected_side_effects:
         risk += 0.10
-    if any(word in tool_blob.lower() for word in ["delete", "rm", "drop", "send", "deploy", "purchase", "pay"]):
+    if _contains_any(tool_blob, ["delete", "rm", "drop", "send", "deploy", "purchase", "pay", "book", "reserve", "예약", "결제"]):
         risk += 0.15
     risk = round(min(1.0, risk), 4)
     scores = {"tool_risk": risk, "overall_drift": risk}

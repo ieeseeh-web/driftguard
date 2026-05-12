@@ -8,6 +8,7 @@
 | 2026-05-12 | `review-agent` CLI 구현 | `src/driftguard/agent_review.py`, CLI subcommand, 테스트 3개, README 사용법 추가 | 샘플 CLI 실행 확인 및 unittest 11개 통과 |
 | 2026-05-12 | JSONL 로그와 handoff/execution_log 평가 강화 | `review-agent --log`, 샘플 2종, 위험 로그/handoff 감지 로직, 테스트 2개 추가 | JSON 파싱, 로그 1줄 저장/파싱, unittest 13개 통과 |
 | 2026-05-12 | Agent 아키텍처와 발표용 문서 작성 | `agent/ARCHITECTURE.md`, `agent/PRESENTATION.md` 작성 | 문서 라인 수 확인 및 unittest 13개 통과 |
+| 2026-05-12 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `sample_agent/`에 여행 비서 에이전트, 시나리오, README, requirements 추가 | venv 설치 후 tool drift 샘플 실행, DriftGuard review-agent로 critical/stop 확인, unittest 13개 통과 |
 
 ## Decisions
 - 기존 “LLM as a Judge 평가 시스템” 방향은 유지하되, 이번 개발 단위는 독립적인 **DriftGuard Agent**로 정의한다.
@@ -36,6 +37,11 @@
 - `examples/agent-review-execution-log.json`
 - `src/driftguard/agent_review.py`
 - `tests/test_agent_review.py`
+- `sample_agent/README.md`
+- `sample_agent/requirements.txt`
+- `sample_agent/sample_agent/travel_agent.py`
+- `sample_agent/scenarios/seoul_weekend.json`
+- `sample_agent/scenarios/short_answer_today.json`
 
 ## Open Issues
 - 실제 LLM 호출을 MVP에 포함할지 결정 필요

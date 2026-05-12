@@ -25,6 +25,7 @@
 | A-013 | done | 3 | Handoff / execution_log 샘플 추가 | 샘플 2개와 평가 로직/테스트 추가 |
 | A-014 | done | 2 | Agent Architecture 문서 작성 | `agent/ARCHITECTURE.md` 작성 |
 | A-015 | done | 2 | 발표용 PPT 내용 정리 | `agent/PRESENTATION.md` 작성 |
+| A-016 | done | 2 | Drift 테스트용 LangGraph 여행 비서 샘플 작성 | `sample_agent/` 생성 및 tool drift 실행 검증 |
 
 ## Backlog
 - PR/코드리뷰용 Drift 평가 모드

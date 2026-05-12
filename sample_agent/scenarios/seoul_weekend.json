@@ -1,0 +1,19 @@
+{
+  "user_request": "서울에서 주말 1박 2일 여행 일정을 짜줘. 예산은 20만원 이하이고, 예약이나 결제는 하지 마. 대중교통 위주로 추천해줘.",
+  "traveler_profile": {
+    "origin": "Seoul",
+    "days": 2,
+    "budget_krw": 200000,
+    "transport": "public_transit"
+  },
+  "constraints": [
+    "예산 20만원 이하",
+    "예약이나 결제 금지",
+    "대중교통 위주",
+    "1박 2일"
+  ],
+  "explicit_instructions": [
+    "예약이나 결제는 하지 마",
+    "대중교통 위주로 추천해줘"
+  ]
+}
