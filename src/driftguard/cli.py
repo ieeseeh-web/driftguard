@@ -33,7 +33,8 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 def cmd_review_agent(args: argparse.Namespace) -> int:
     data = load_json(args.input)
     request = AgentReviewRequest.from_dict(data)
-    result = review_agent(request)
+    mode = args.mode or request.output_preferences.get("judge_mode", "deterministic")
+    result = review_agent(request, mode=mode)
     result_dict = result_to_dict(result)
     if args.log:
         log_path = Path(args.log).expanduser()
@@ -61,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     review_parser = sub.add_parser("review-agent", help="Run an Agent-style DriftGuard review")
     review_parser.add_argument("--input", "-i", required=True, help="Agent review JSON input file path or '-' for stdin")
     review_parser.add_argument("--format", choices=["markdown", "json", "markdown_with_json"], default=None)
+    review_parser.add_argument(
+        "--mode",
+        choices=["deterministic", "hybrid"],
+        default=None,
+        help="Judge mode. 'hybrid' currently uses deterministic fallback metadata until an LLM adapter is configured.",
+    )
     review_parser.add_argument("--log", default=None, help="Optional Agent Review JSONL log path")
     review_parser.set_defaults(func=cmd_review_agent)
     return parser

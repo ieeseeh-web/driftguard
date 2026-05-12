@@ -102,6 +102,16 @@ class AgentReviewTests(unittest.TestCase):
         self.assertIn("confidence", data)
         self.assertIn("verification_status", data)
 
+    def test_hybrid_mode_uses_deterministic_fallback_metadata(self):
+        result = review_agent(AgentReviewRequest.from_dict({
+            "review_type": "final_response",
+            "user_request": "README 요약",
+            "artifact": {"agent_output": "README를 요약했습니다."},
+        }), mode="hybrid")
+        self.assertEqual(result.metadata["judge_mode"], "hybrid")
+        self.assertEqual(result.metadata["judge_mode_status"], "deterministic_fallback")
+        self.assertTrue(result.judge_results)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -272,9 +272,17 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 ### Phase 4. Optional LLM Judge Adapter
 
+상태: 기반 구현 완료
+
 목표:
 
 - deterministic 결과를 기본값으로 유지하면서 선택적으로 LLM Judge를 붙인다.
+
+현재 구현:
+
+- `review-agent --mode deterministic|hybrid` 옵션을 제공한다.
+- `hybrid`는 아직 외부 LLM을 호출하지 않고 deterministic fallback으로 동작한다.
+- 결과 metadata에 `judge_mode`, `judge_mode_status`, `llm_adapter`, `fallback_reason`을 기록해 운영자가 현재 평가 모드를 알 수 있게 한다.
 
 원칙:
 

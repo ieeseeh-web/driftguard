@@ -12,6 +12,7 @@ from .policy import recommendation, risk_level, weighted_drift_score
 
 ReviewType = Literal["final_response", "tool_call", "memory_update", "plan", "handoff", "execution_log"]
 AgentRecommendation = Literal["continue", "revise", "ask_user", "stop", "skip_memory"]
+JudgeMode = Literal["deterministic", "hybrid"]
 
 
 @dataclass
@@ -251,7 +252,26 @@ def _requires_confirmation(request: AgentReviewRequest, overall: float, drift_ty
     return rec in {"ask_user", "stop"} or overall >= 0.5 or external_or_destructive or "safety" in drift_types
 
 
-def review_agent(request: AgentReviewRequest) -> AgentReviewResult:
+def _mode_metadata(mode: JudgeMode) -> dict[str, Any]:
+    if mode == "deterministic":
+        return {
+            "judge_mode": "deterministic",
+            "judge_mode_status": "completed",
+            "llm_adapter": "not_used",
+        }
+    # Hybrid mode is intentionally fail-closed for now: deterministic findings are
+    # produced and tagged as a fallback until an explicit LLM adapter is configured.
+    return {
+        "judge_mode": "hybrid",
+        "judge_mode_status": "deterministic_fallback",
+        "llm_adapter": "not_configured",
+        "fallback_reason": "Hybrid LLM judge adapter is scaffolded but not configured; deterministic judges were used.",
+    }
+
+
+def review_agent(request: AgentReviewRequest, mode: JudgeMode = "deterministic") -> AgentReviewResult:
+    if mode not in {"deterministic", "hybrid"}:
+        raise ValueError(f"Unsupported judge mode: {mode}")
     plan = _plan_for(request)
     evidence: list[EvidenceItem] = []
     scores: dict[str, float] = {}
@@ -398,7 +418,7 @@ def review_agent(request: AgentReviewRequest) -> AgentReviewResult:
         confidence=confidence,
         verification_status=verification_status,
         suggested_user_confirmation_message=confirmation,
-        metadata={"session_id": request.session_id, "agent_id": request.agent_id},
+        metadata={"session_id": request.session_id, "agent_id": request.agent_id, **_mode_metadata(mode)},
     )
 
 
