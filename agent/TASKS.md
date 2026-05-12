@@ -46,7 +46,7 @@
 | AAJ-007 | done | 3 | EvidenceItem 추출 로직 추가 | execution log/tool call/handoff에서 evidence 추출 |
 | AAJ-008 | done | 3 | Markdown report에 judge breakdown 추가 | 사람 검토용 보고서에 judge별 판단과 근거 표시 |
 | AAJ-009 | done | 4 | Optional LLM/hybrid judge adapter 설계 | `--mode hybrid`는 deterministic fallback metadata를 남기고 LLM adapter 구성 전까지 안전하게 동작 |
-| AAJ-010 | todo | 4 | Sandbox verifier 설계 | code execution 전 보안 요구사항과 opt-in 정책 문서화 |
+| AAJ-010 | done | 4 | Sandbox verifier 설계 | `src/driftguard/verifier.py` fail-closed boundary와 `agent/SANDBOX_VERIFICATION.md` 문서화 |
 
 ## Blocked / Open Questions
 - 실제 LLM 호출을 포함할지, 우선 프롬프트/리포트 생성까지만 할지 결정 필요

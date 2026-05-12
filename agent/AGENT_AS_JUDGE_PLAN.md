@@ -299,9 +299,18 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 ### Phase 5. Tool Verification / Sandbox
 
+상태: 안전 경계 구현 완료
+
 목표:
 
 - 코드 평가나 로그 평가에서 실제 검증 도구를 안전하게 사용할 수 있게 한다.
+
+현재 구현:
+
+- `src/driftguard/verifier.py`가 실행형/외부 영향 가능 verifier를 `blocked`로 분류한다.
+- `python_executor`, `exec`, `shell`, `api_caller`, `browser_agent`, `sql_runner` 등은 sandbox 전까지 실행하지 않는다.
+- 결과는 `verification_status`와 `metadata.sandbox_verification`에 기록된다.
+- 상세 정책은 `agent/SANDBOX_VERIFICATION.md`에 문서화했다.
 
 주의:
 

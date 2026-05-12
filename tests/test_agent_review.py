@@ -1,6 +1,7 @@
 import unittest
 
 from driftguard.agent_review import AgentReviewRequest, result_to_dict, result_to_markdown, review_agent
+from driftguard.verifier import assess_verification_boundary
 
 
 class AgentReviewTests(unittest.TestCase):
@@ -111,6 +112,30 @@ class AgentReviewTests(unittest.TestCase):
         self.assertEqual(result.metadata["judge_mode"], "hybrid")
         self.assertEqual(result.metadata["judge_mode_status"], "deterministic_fallback")
         self.assertTrue(result.judge_results)
+
+    def test_sandbox_verifier_blocks_code_execution_boundary(self):
+        boundary = assess_verification_boundary("tool_call", {
+            "tool_name": "python_executor",
+            "tool_args": {"code": "import os; os.system('rm -rf /tmp/x')"},
+        })
+        self.assertEqual(boundary.status, "blocked")
+        self.assertIn("container_or_microvm_isolation", boundary.required_controls)
+
+    def test_review_records_sandbox_block_metadata(self):
+        result = review_agent(AgentReviewRequest.from_dict({
+            "review_type": "tool_call",
+            "user_request": "계산 결과를 확인해줘",
+            "artifact": {
+                "current_goal": "계산 검증",
+                "tool_name": "python_executor",
+                "tool_args": {"code": "print(1 + 1)"},
+                "expected_side_effects": [],
+            },
+        }))
+        self.assertEqual(result.verification_status, "blocked")
+        self.assertEqual(result.metadata["sandbox_verification"]["status"], "blocked")
+        self.assertIn("safety", result.drift_types)
+        self.assertIn(result.recommendation, {"ask_user", "stop"})
 
 
 if __name__ == "__main__":

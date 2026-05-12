@@ -9,6 +9,7 @@ from uuid import uuid4
 from .evaluator import evaluate
 from .models import EvaluationRequest, EvaluationResult
 from .policy import recommendation, risk_level, weighted_drift_score
+from .verifier import assess_verification_boundary
 
 ReviewType = Literal["final_response", "tool_call", "memory_update", "plan", "handoff", "execution_log"]
 AgentRecommendation = Literal["continue", "revise", "ask_user", "stop", "skip_memory"]
@@ -277,6 +278,7 @@ def review_agent(request: AgentReviewRequest, mode: JudgeMode = "deterministic")
     scores: dict[str, float] = {}
     drift_types: list[str] = []
     component_results: list[EvaluationResult] = []
+    sandbox_verification = assess_verification_boundary(request.review_type, request.artifact)
 
     if request.review_type in {"final_response", "plan", "execution_log", "handoff"}:
         goal = _eval_goal_like(request)
@@ -358,6 +360,16 @@ def review_agent(request: AgentReviewRequest, mode: JudgeMode = "deterministic")
         if scores["memory_risk"] >= 0.7:
             drift_types.append("safety")
 
+    if sandbox_verification.status == "blocked":
+        scores["tool_risk"] = max(scores.get("tool_risk", 0.0), 0.7)
+        scores["safety_risk"] = max(scores.get("safety_risk", 0.0), 0.8)
+        drift_types.extend(["tool", "safety"])
+        evidence.append(EvidenceItem(
+            type="safety",
+            description=sandbox_verification.reason,
+            source="sandbox_verifier",
+        ))
+
     drift_types = sorted(set(drift_types), key=drift_types.index)
     if not drift_types:
         drift_types = ["none"]
@@ -394,7 +406,7 @@ def review_agent(request: AgentReviewRequest, mode: JudgeMode = "deterministic")
     guidance = _guidance_for(drift_types, rec, request)
     judge_results = _judge_findings(scores, evidence, rec)  # type: ignore[arg-type]
     confidence = _confidence_for(judge_results, evidence, request)
-    verification_status = "evidence_collected" if evidence else "not_run"
+    verification_status = sandbox_verification.status if sandbox_verification.status == "blocked" else ("evidence_collected" if evidence else sandbox_verification.status)
 
     confirmation = ""
     if requires_confirmation:
@@ -418,7 +430,12 @@ def review_agent(request: AgentReviewRequest, mode: JudgeMode = "deterministic")
         confidence=confidence,
         verification_status=verification_status,
         suggested_user_confirmation_message=confirmation,
-        metadata={"session_id": request.session_id, "agent_id": request.agent_id, **_mode_metadata(mode)},
+        metadata={
+            "session_id": request.session_id,
+            "agent_id": request.agent_id,
+            "sandbox_verification": asdict(sandbox_verification),
+            **_mode_metadata(mode),
+        },
     )
 
 
