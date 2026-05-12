@@ -326,13 +326,22 @@ MVP에서는 LLM planner가 아니라 deterministic planner로 시작한다.
 
 ### Phase 6. Observability / Integration
 
+상태: JSONL audit log 확장 완료
+
 목표:
 
 - Langfuse/Phoenix/OpenTelemetry와 연결 가능한 export 구조 제공
 
+현재 구현:
+
+- `review-agent --audit-log` 옵션을 제공한다.
+- `src/driftguard/audit.py`가 compact observability record를 생성한다.
+- full result log(`--log`)와 compact audit log(`--audit-log`)를 분리했다.
+- 상세 필드는 `agent/AUDIT_LOGGING.md`에 문서화했다.
+
 작업:
 
-1. JSONL audit log 확장
+1. JSONL audit log 확장 — 완료
 2. OpenTelemetry span attribute 매핑 문서
 3. Langfuse/Phoenix exporter PoC
 4. promptfoo/DeepEval integration example

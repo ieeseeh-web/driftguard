@@ -47,6 +47,8 @@
 | AAJ-008 | done | 3 | Markdown report에 judge breakdown 추가 | 사람 검토용 보고서에 judge별 판단과 근거 표시 |
 | AAJ-009 | done | 4 | Optional LLM/hybrid judge adapter 설계 | `--mode hybrid`는 deterministic fallback metadata를 남기고 LLM adapter 구성 전까지 안전하게 동작 |
 | AAJ-010 | done | 4 | Sandbox verifier 설계 | `src/driftguard/verifier.py` fail-closed boundary와 `agent/SANDBOX_VERIFICATION.md` 문서화 |
+| OBS-001 | done | 3 | Agent Review compact audit log 추가 | `--audit-log` 옵션, `src/driftguard/audit.py`, `agent/AUDIT_LOGGING.md` 작성 |
+| OBS-002 | todo | 3 | OpenTelemetry/Langfuse/Phoenix export schema 설계 | audit record 기반 exporter mapping 문서 작성 |
 
 ## Blocked / Open Questions
 - 실제 LLM 호출을 포함할지, 우선 프롬프트/리포트 생성까지만 할지 결정 필요

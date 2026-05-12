@@ -3,10 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from dataclasses import asdict
 from pathlib import Path
 
 from .agent_review import AgentReviewRequest, result_to_dict, result_to_markdown, review_agent
+from .audit import append_jsonl, build_agent_review_audit_record
 from .evaluator import evaluate
 from .logger import append_log
 from .models import EvaluationRequest
@@ -34,13 +36,17 @@ def cmd_review_agent(args: argparse.Namespace) -> int:
     data = load_json(args.input)
     request = AgentReviewRequest.from_dict(data)
     mode = args.mode or request.output_preferences.get("judge_mode", "deterministic")
+    start = time.perf_counter()
     result = review_agent(request, mode=mode)
+    latency_ms = int((time.perf_counter() - start) * 1000)
     result_dict = result_to_dict(result)
     if args.log:
         log_path = Path(args.log).expanduser()
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(result_dict, ensure_ascii=False) + "\n")
+    if args.audit_log:
+        append_jsonl(build_agent_review_audit_record(result, request, latency_ms=latency_ms), args.audit_log)
     output_format = args.format or request.output_preferences.get("format", "markdown_with_json")
     if output_format == "json":
         print(json.dumps(result_dict, ensure_ascii=False, indent=2))
@@ -68,7 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Judge mode. 'hybrid' currently uses deterministic fallback metadata until an LLM adapter is configured.",
     )
-    review_parser.add_argument("--log", default=None, help="Optional Agent Review JSONL log path")
+    review_parser.add_argument("--log", default=None, help="Optional full Agent Review JSONL log path")
+    review_parser.add_argument("--audit-log", default=None, help="Optional compact observability/audit JSONL log path")
     review_parser.set_defaults(func=cmd_review_agent)
     return parser
 

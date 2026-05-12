@@ -1,6 +1,10 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from driftguard.agent_review import AgentReviewRequest, result_to_dict, result_to_markdown, review_agent
+from driftguard.audit import append_jsonl, build_agent_review_audit_record
 from driftguard.verifier import assess_verification_boundary
 
 
@@ -136,6 +140,43 @@ class AgentReviewTests(unittest.TestCase):
         self.assertEqual(result.metadata["sandbox_verification"]["status"], "blocked")
         self.assertIn("safety", result.drift_types)
         self.assertIn(result.recommendation, {"ask_user", "stop"})
+
+    def test_audit_record_contains_observability_summary(self):
+        request = AgentReviewRequest.from_dict({
+            "review_type": "tool_call",
+            "user_request": "계산 결과를 확인해줘",
+            "constraints": ["실행 전 확인"],
+            "artifact": {
+                "current_goal": "계산 검증",
+                "tool_name": "python_executor",
+                "tool_args": {"code": "print(1 + 1)"},
+                "expected_side_effects": [],
+            },
+        })
+        result = review_agent(request)
+        record = build_agent_review_audit_record(result, request, latency_ms=12)
+        self.assertEqual(record["event_type"], "agent_review.audit")
+        self.assertEqual(record["schema_version"], "1.0")
+        self.assertEqual(record["review_id"], result.review_id)
+        self.assertEqual(record["verification_status"], "blocked")
+        self.assertEqual(record["sandbox_status"], "blocked")
+        self.assertEqual(record["latency_ms"], 12)
+        self.assertIn("artifact_keys", record["request_context"])
+
+    def test_append_audit_jsonl(self):
+        request = AgentReviewRequest.from_dict({
+            "review_type": "final_response",
+            "user_request": "요약해줘",
+            "artifact": {"agent_output": "요약했습니다."},
+        })
+        result = review_agent(request)
+        record = build_agent_review_audit_record(result, request)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "audit.jsonl"
+            append_jsonl(record, path)
+            loaded = json.loads(path.read_text().strip())
+        self.assertEqual(loaded["review_id"], result.review_id)
+        self.assertEqual(loaded["event_type"], "agent_review.audit")
 
 
 if __name__ == "__main__":
