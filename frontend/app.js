@@ -100,7 +100,8 @@ const samples = {
 
 const state = {
   mode: "agent",
-  result: null
+  result: null,
+  registeredAgents: []
 };
 
 const els = {
@@ -112,9 +113,10 @@ const els = {
   lastRun: document.querySelector("#lastRun"),
   sampleSelect: document.querySelector("#sampleSelect"),
   reviewMode: document.querySelector("#reviewMode"),
-  sampleAgentScenario: document.querySelector("#sampleAgentScenario"),
-  sampleAgentDrift: document.querySelector("#sampleAgentDrift"),
-  runSampleAgent: document.querySelector("#runSampleAgent"),
+  registeredAgent: document.querySelector("#registeredAgent"),
+  agentScenario: document.querySelector("#agentScenario"),
+  agentDrift: document.querySelector("#agentDrift"),
+  runRegisteredAgent: document.querySelector("#runRegisteredAgent"),
   loadSample: document.querySelector("#loadSample"),
   formatJson: document.querySelector("#formatJson"),
   runRequest: document.querySelector("#runRequest"),
@@ -191,10 +193,10 @@ function setBusy(isBusy) {
 }
 
 function setSampleBusy(isBusy) {
-  els.runSampleAgent.disabled = isBusy;
-  els.runSampleAgent.innerHTML = isBusy
+  els.runRegisteredAgent.disabled = isBusy;
+  els.runRegisteredAgent.innerHTML = isBusy
     ? '<i data-lucide="loader-2"></i> Running'
-    : '<i data-lucide="bot"></i> Run Sample';
+    : '<i data-lucide="bot"></i> Run Agent';
   renderIcons();
 }
 
@@ -214,8 +216,62 @@ async function checkHealth() {
     const data = await response.json();
     els.healthStatus.textContent = data.status;
     els.swaggerLink.href = `${apiBase()}/docs`;
+    await loadRegisteredAgents();
   } catch (error) {
     els.healthStatus.textContent = "offline";
+  }
+}
+
+async function loadRegisteredAgents() {
+  const response = await fetch(`${apiBase()}/v1/agents`);
+  if (!response.ok) {
+    return;
+  }
+  const data = await response.json();
+  state.registeredAgents = data.agents || [];
+  fillRegisteredAgents();
+}
+
+function fillRegisteredAgents() {
+  const current = els.registeredAgent.value;
+  els.registeredAgent.innerHTML = "";
+  state.registeredAgents.forEach((agent) => {
+    const option = document.createElement("option");
+    option.value = agent.id;
+    option.textContent = agent.name || agent.id;
+    els.registeredAgent.appendChild(option);
+  });
+  if (current && state.registeredAgents.some((agent) => agent.id === current)) {
+    els.registeredAgent.value = current;
+  }
+  fillAgentRunOptions();
+}
+
+function selectedAgent() {
+  return state.registeredAgents.find((agent) => agent.id === els.registeredAgent.value) || state.registeredAgents[0];
+}
+
+function fillAgentRunOptions() {
+  const agent = selectedAgent();
+  els.agentScenario.innerHTML = "";
+  els.agentDrift.innerHTML = "";
+  if (!agent) {
+    return;
+  }
+  (agent.scenarios || []).forEach((scenario) => {
+    const option = document.createElement("option");
+    option.value = scenario.id;
+    option.textContent = scenario.label || scenario.id;
+    els.agentScenario.appendChild(option);
+  });
+  (agent.drift_modes || []).forEach((mode) => {
+    const option = document.createElement("option");
+    option.value = mode;
+    option.textContent = mode;
+    els.agentDrift.appendChild(option);
+  });
+  if ([...els.agentDrift.options].some((option) => option.value === "tool")) {
+    els.agentDrift.value = "tool";
   }
 }
 
@@ -247,16 +303,22 @@ async function runRequest() {
   }
 }
 
-async function runSampleAgent() {
+async function runRegisteredAgent() {
+  const agent = selectedAgent();
+  if (!agent) {
+    els.requestError.textContent = "No registered agents are available.";
+    return;
+  }
   setSampleBusy(true);
   els.requestError.textContent = "";
   try {
     const payload = {
-      scenario: els.sampleAgentScenario.value,
-      drift_mode: els.sampleAgentDrift.value,
+      agent_id: agent.id,
+      scenario: els.agentScenario.value,
+      drift_mode: els.agentDrift.value,
       judge_mode: els.reviewMode.value
     };
-    const response = await fetch(`${apiBase()}/v1/sample-agent/runs`, {
+    const response = await fetch(`${apiBase()}/v1/agent-runs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -269,11 +331,11 @@ async function runSampleAgent() {
     }
     state.result = data;
     els.lastRun.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    els.activeEndpoint.textContent = "/v1/sample-agent/runs";
-    els.requestTitle.textContent = "Sample Agent Review Request";
+    els.activeEndpoint.textContent = "/v1/agent-runs";
+    els.requestTitle.textContent = "Registered Agent Review Request";
     els.requestBody.value = JSON.stringify(data.review_request, null, 2);
     renderResult(data.review_result);
-    els.resultTitle.textContent = `sample_agent · ${data.drift_mode}`;
+    els.resultTitle.textContent = `${data.agent?.name || data.agent?.id || "agent"} · ${data.drift_mode}`;
     els.jsonView.textContent = JSON.stringify(data, null, 2);
   } catch (error) {
     els.requestError.textContent = error.message;
@@ -400,9 +462,10 @@ els.apiBase.addEventListener("change", checkHealth);
 els.checkHealth.addEventListener("click", checkHealth);
 els.loadSample.addEventListener("click", loadSelectedSample);
 els.sampleSelect.addEventListener("change", loadSelectedSample);
+els.registeredAgent.addEventListener("change", fillAgentRunOptions);
 els.formatJson.addEventListener("click", formatJson);
 els.runRequest.addEventListener("click", runRequest);
-els.runSampleAgent.addEventListener("click", runSampleAgent);
+els.runRegisteredAgent.addEventListener("click", runRegisteredAgent);
 
 setMode("agent");
 renderIcons();

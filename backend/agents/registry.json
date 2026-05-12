@@ -1,0 +1,26 @@
+{
+  "agents": [
+    {
+      "id": "sample-travel-assistant",
+      "name": "Sample Travel Assistant",
+      "description": "LangGraph travel assistant bundled for Agent Drift demos.",
+      "runtime": "python_module",
+      "working_directory": "sample_agent",
+      "python": ".venv/bin/python",
+      "module": "sample_agent.travel_agent",
+      "scenarios": [
+        {
+          "id": "seoul_weekend",
+          "label": "Seoul weekend",
+          "input": "scenarios/seoul_weekend.json"
+        },
+        {
+          "id": "short_answer_today",
+          "label": "Short answer today",
+          "input": "scenarios/short_answer_today.json"
+        }
+      ],
+      "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
+    }
+  ]
+}

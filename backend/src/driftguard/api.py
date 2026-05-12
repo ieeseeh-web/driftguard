@@ -86,9 +86,38 @@ def openapi_schema() -> JsonDict:
                     },
                 }
             },
+            "/v1/agents": {
+                "get": {
+                    "summary": "List registered runnable agents",
+                    "responses": {
+                        "200": {
+                            "description": "Registered agent list",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AgentRegistryResponse"}}},
+                        }
+                    },
+                }
+            },
+            "/v1/agent-runs": {
+                "post": {
+                    "summary": "Run a registered agent and review it",
+                    "requestBody": {
+                        "required": True,
+                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RegisteredAgentRunRequest"}}},
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Registered agent run plus DriftGuard review",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RegisteredAgentRunResult"}}},
+                        },
+                        "400": {"$ref": "#/components/responses/Error"},
+                        "500": {"$ref": "#/components/responses/Error"},
+                    },
+                }
+            },
             "/v1/sample-agent/runs": {
                 "post": {
                     "summary": "Run the bundled sample agent and review it",
+                    "deprecated": True,
                     "requestBody": {
                         "required": True,
                         "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SampleAgentRunRequest"}}},
@@ -270,6 +299,46 @@ def openapi_schema() -> JsonDict:
                         },
                     },
                 },
+                "RegisteredAgentRunRequest": {
+                    "type": "object",
+                    "properties": {
+                        "agent_id": {"type": "string", "default": "sample-travel-assistant"},
+                        "scenario": {"type": "string", "default": "seoul_weekend"},
+                        "drift_mode": {
+                            "type": "string",
+                            "enum": ["none", "goal", "tool", "memory", "handoff"],
+                            "default": "tool",
+                        },
+                        "judge_mode": {
+                            "type": "string",
+                            "enum": ["deterministic", "hybrid"],
+                            "default": "deterministic",
+                        },
+                        "timeout_seconds": {"type": "number", "default": 20},
+                    },
+                },
+                "RegisteredAgentRunResult": {
+                    "type": "object",
+                    "properties": {
+                        "agent": {"type": "object", "additionalProperties": True},
+                        "scenario": {"type": "string"},
+                        "drift_mode": {"type": "string"},
+                        "agent_result": {"type": "object", "additionalProperties": True},
+                        "review_request": {"type": "object", "additionalProperties": True},
+                        "review_result": {"$ref": "#/components/schemas/AgentReviewResult"},
+                        "stdout": {"type": "string"},
+                        "stderr": {"type": "string"},
+                    },
+                },
+                "AgentRegistryResponse": {
+                    "type": "object",
+                    "properties": {
+                        "agents": {
+                            "type": "array",
+                            "items": {"type": "object", "additionalProperties": True},
+                        }
+                    },
+                },
                 "SampleAgentRunResult": {
                     "type": "object",
                     "properties": {
@@ -421,33 +490,101 @@ def handle_agent_review(data: JsonDict, query: dict[str, list[str]] | None = Non
     return result_dict
 
 
-def handle_sample_agent_run(data: JsonDict) -> JsonDict:
-    scenarios = {
-        "seoul_weekend": "seoul_weekend.json",
-        "short_answer_today": "short_answer_today.json",
+def backend_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def load_agent_registry() -> list[JsonDict]:
+    registry_path = backend_root() / "agents" / "registry.json"
+    if not registry_path.exists():
+        return []
+    data = json.loads(registry_path.read_text(encoding="utf-8"))
+    agents = data.get("agents", [])
+    if not isinstance(agents, list):
+        raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Agent registry must contain an agents list")
+    return agents
+
+
+def public_agent(agent: JsonDict) -> JsonDict:
+    return {
+        "id": agent.get("id"),
+        "name": agent.get("name"),
+        "description": agent.get("description", ""),
+        "runtime": agent.get("runtime", "python_module"),
+        "scenarios": agent.get("scenarios", []),
+        "drift_modes": agent.get("drift_modes", []),
     }
+
+
+def handle_agent_list() -> JsonDict:
+    return {"agents": [public_agent(agent) for agent in load_agent_registry()]}
+
+
+def _find_agent(agent_id: str) -> JsonDict:
+    for agent in load_agent_registry():
+        if agent.get("id") == agent_id:
+            return agent
+    raise ApiError(HTTPStatus.BAD_REQUEST, "Unknown agent_id", {"agent_id": agent_id})
+
+
+def _find_scenario(agent: JsonDict, scenario_id: str) -> JsonDict:
+    for scenario in agent.get("scenarios", []):
+        if scenario.get("id") == scenario_id:
+            return scenario
+    raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported scenario for agent", {
+        "agent_id": agent.get("id"),
+        "scenario": scenario_id,
+    })
+
+
+def handle_registered_agent_run(data: JsonDict) -> JsonDict:
     drift_modes = {"none", "goal", "tool", "memory", "handoff"}
     judge_modes = {"deterministic", "hybrid"}
 
+    agent_id = str(data.get("agent_id", "sample-travel-assistant"))
+    agent = _find_agent(agent_id)
     scenario = str(data.get("scenario", "seoul_weekend"))
     drift_mode = str(data.get("drift_mode", "tool"))
     judge_mode = str(data.get("judge_mode", "deterministic"))
     timeout_seconds = float(data.get("timeout_seconds", 20))
+    scenario_config = _find_scenario(agent, scenario)
 
-    if scenario not in scenarios:
-        raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported sample scenario", {"scenario": scenario})
     if drift_mode not in drift_modes:
         raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported drift_mode", {"drift_mode": drift_mode})
+    if drift_mode not in set(agent.get("drift_modes", [])):
+        raise ApiError(HTTPStatus.BAD_REQUEST, "Drift mode is not supported by this agent", {
+            "agent_id": agent_id,
+            "drift_mode": drift_mode,
+        })
     if judge_mode not in judge_modes:
         raise ApiError(HTTPStatus.BAD_REQUEST, "Unsupported judge_mode", {"judge_mode": judge_mode})
+    if agent.get("runtime", "python_module") != "python_module":
+        raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Unsupported agent runtime", {
+            "agent_id": agent_id,
+            "runtime": agent.get("runtime"),
+        })
 
-    backend_root = Path(__file__).resolve().parents[2]
-    sample_root = backend_root / "sample_agent"
-    scenario_path = sample_root / "scenarios" / scenarios[scenario]
+    root = backend_root()
+    agent_root = (root / str(agent.get("working_directory", ""))).resolve()
+    try:
+        agent_root.relative_to(root)
+    except ValueError as exc:
+        raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Agent working_directory must stay inside backend", {
+            "agent_id": agent_id,
+            "working_directory": str(agent_root),
+        }) from exc
+    scenario_path = (agent_root / str(scenario_config.get("input", ""))).resolve()
+    try:
+        scenario_path.relative_to(agent_root)
+    except ValueError as exc:
+        raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Scenario input must stay inside agent directory", {
+            "agent_id": agent_id,
+            "scenario": scenario,
+        }) from exc
     if not scenario_path.exists():
         raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "Sample scenario file is missing", {"path": str(scenario_path)})
 
-    python_bin = sample_root / ".venv" / "bin" / "python"
+    python_bin = agent_root / str(agent.get("python", ".venv/bin/python"))
     python = str(python_bin if python_bin.exists() else Path(sys.executable))
 
     with tempfile.TemporaryDirectory(prefix="driftguard-sample-agent-") as tmp:
@@ -457,7 +594,7 @@ def handle_sample_agent_run(data: JsonDict) -> JsonDict:
         cmd = [
             python,
             "-m",
-            "sample_agent.travel_agent",
+            str(agent.get("module")),
             "--input",
             str(scenario_path),
             "--drift-mode",
@@ -470,7 +607,7 @@ def handle_sample_agent_run(data: JsonDict) -> JsonDict:
         try:
             completed = subprocess.run(
                 cmd,
-                cwd=sample_root,
+                cwd=agent_root,
                 capture_output=True,
                 text=True,
                 timeout=timeout_seconds,
@@ -499,6 +636,7 @@ def handle_sample_agent_run(data: JsonDict) -> JsonDict:
     request_obj = AgentReviewRequest.from_dict(review_request)
     review_result = review_agent(request_obj, mode=judge_mode)
     return {
+        "agent": public_agent(agent),
         "scenario": scenario,
         "drift_mode": drift_mode,
         "judge_mode": judge_mode,
@@ -508,6 +646,10 @@ def handle_sample_agent_run(data: JsonDict) -> JsonDict:
         "stdout": completed.stdout,
         "stderr": completed.stderr,
     }
+
+
+def handle_sample_agent_run(data: JsonDict) -> JsonDict:
+    return handle_registered_agent_run({"agent_id": "sample-travel-assistant", **data})
 
 
 class DriftGuardRequestHandler(BaseHTTPRequestHandler):
@@ -536,6 +678,8 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                     "GET /health",
                     "GET /docs",
                     "GET /openapi.json",
+                    "GET /v1/agents",
+                    "POST /v1/agent-runs",
                     "POST /v1/evaluations",
                     "POST /v1/agent-reviews",
                     "POST /v1/sample-agent/runs",
@@ -547,6 +691,9 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/docs":
             _html_response(self, HTTPStatus.OK, swagger_ui_html(), include_body=include_body)
+            return
+        if parsed.path == "/v1/agents":
+            _json_response(self, HTTPStatus.OK, handle_agent_list(), include_body=include_body)
             return
         self._send_error(HTTPStatus.NOT_FOUND, f"Unknown endpoint: {parsed.path}")
 
@@ -563,6 +710,9 @@ class DriftGuardRequestHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/v1/sample-agent/runs":
                 _json_response(self, HTTPStatus.OK, handle_sample_agent_run(data))
+                return
+            if parsed.path == "/v1/agent-runs":
+                _json_response(self, HTTPStatus.OK, handle_registered_agent_run(data))
                 return
             raise ApiError(HTTPStatus.NOT_FOUND, f"Unknown endpoint: {parsed.path}")
         except ApiError as exc:

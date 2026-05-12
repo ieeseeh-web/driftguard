@@ -184,13 +184,48 @@ DRIFTGUARD_AUDIT_LOG=logs/audit.jsonl ./bin/driftguard serve
 | `GET` | `/health` | 서버 상태 및 엔드포인트 목록 |
 | `GET` | `/docs` | Swagger UI |
 | `GET` | `/openapi.json` | OpenAPI 3.0 스펙 |
+| `GET` | `/v1/agents` | 등록된 실행 가능 에이전트 목록 |
+| `POST` | `/v1/agent-runs` | 등록된 에이전트 실행 및 DriftGuard 리뷰 |
 | `POST` | `/v1/evaluations` | 기존 Goal/Instruction/Tool/Memory/Final 평가 |
 | `POST` | `/v1/agent-reviews` | Agent 방식 Drift 리뷰 |
-| `POST` | `/v1/sample-agent/runs` | 번들된 샘플 에이전트 실행 및 DriftGuard 리뷰 |
+| `POST` | `/v1/sample-agent/runs` | 번들된 샘플 에이전트 실행 및 DriftGuard 리뷰, 호환용 |
 
 ---
 
-## 10. CLI 사용법
+## 10. 에이전트 등록
+
+화면에서 선택해 실행할 에이전트는 `backend/agents/registry.json`에 등록합니다. 현재 번들된 샘플 에이전트는 `sample-travel-assistant`로 등록되어 있습니다.
+
+등록 형식:
+
+```json
+{
+  "id": "sample-travel-assistant",
+  "name": "Sample Travel Assistant",
+  "runtime": "python_module",
+  "working_directory": "sample_agent",
+  "python": ".venv/bin/python",
+  "module": "sample_agent.travel_agent",
+  "scenarios": [
+    {"id": "seoul_weekend", "label": "Seoul weekend", "input": "scenarios/seoul_weekend.json"}
+  ],
+  "drift_modes": ["none", "goal", "tool", "memory", "handoff"]
+}
+```
+
+등록된 에이전트는 다음 CLI 계약을 지원해야 합니다.
+
+```bash
+python -m <module> \
+  --input <scenario-json> \
+  --drift-mode <mode> \
+  --output <agent-result-json> \
+  --review-output <driftguard-review-request-json>
+```
+
+---
+
+## 11. CLI 사용법
 
 API 서버 외에도 기존 CLI 실행을 유지합니다.
 
@@ -229,7 +264,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 ---
 
-## 11. 구현 구조
+## 12. 구현 구조
 
 | 경로 | 설명 |
 |---|---|

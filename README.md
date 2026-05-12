@@ -50,4 +50,4 @@ python3 -m http.server 5173
 open http://127.0.0.1:5173
 ```
 
-프론트엔드 사이드바의 `Sample Agent` 영역에서 번들된 LangGraph 샘플 에이전트를 실행할 수 있습니다. 실행 결과는 백엔드의 `POST /v1/sample-agent/runs`를 통해 DriftGuard 리뷰 결과로 바로 표시됩니다.
+프론트엔드 사이드바의 `Registered Agent` 영역에서 `backend/agents/registry.json`에 등록된 에이전트를 선택해 실행할 수 있습니다. 실행 결과는 백엔드의 `POST /v1/agent-runs`를 통해 DriftGuard 리뷰 결과로 바로 표시됩니다.

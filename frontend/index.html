@@ -87,26 +87,19 @@
             <div><span>Eval</span><code>/v1/evaluations</code></div>
           </div>
 
-          <div class="sample-agent-box" aria-label="Sample agent runner">
+          <div class="sample-agent-box" aria-label="Registered agent runner">
             <div class="section-heading">
-              <span>Sample Agent</span>
+              <span>Registered Agent</span>
             </div>
-            <label class="field-label" for="sampleAgentScenario">Scenario</label>
-            <select id="sampleAgentScenario">
-              <option value="seoul_weekend">Seoul weekend</option>
-              <option value="short_answer_today">Short answer today</option>
-            </select>
-            <label class="field-label" for="sampleAgentDrift">Drift</label>
-            <select id="sampleAgentDrift">
-              <option value="tool">tool</option>
-              <option value="goal">goal</option>
-              <option value="memory">memory</option>
-              <option value="handoff">handoff</option>
-              <option value="none">none</option>
-            </select>
-            <button id="runSampleAgent" class="button-primary" type="button">
+            <label class="field-label" for="registeredAgent">Agent</label>
+            <select id="registeredAgent"></select>
+            <label class="field-label" for="agentScenario">Scenario</label>
+            <select id="agentScenario"></select>
+            <label class="field-label" for="agentDrift">Drift</label>
+            <select id="agentDrift"></select>
+            <button id="runRegisteredAgent" class="button-primary" type="button">
               <i data-lucide="bot"></i>
-              Run Sample
+              Run Agent
             </button>
           </div>
         </aside>

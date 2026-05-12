@@ -45,6 +45,8 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(data["status"], "ok")
         self.assertIn("POST /v1/evaluations", data["endpoints"])
         self.assertIn("GET /docs", data["endpoints"])
+        self.assertIn("GET /v1/agents", data["endpoints"])
+        self.assertIn("POST /v1/agent-runs", data["endpoints"])
 
     def test_openapi_schema(self):
         status, data = self.request("GET", "/openapi.json")
@@ -52,7 +54,15 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(data["openapi"], "3.0.3")
         self.assertIn("/v1/evaluations", data["paths"])
         self.assertIn("/v1/agent-reviews", data["paths"])
+        self.assertIn("/v1/agents", data["paths"])
+        self.assertIn("/v1/agent-runs", data["paths"])
         self.assertIn("/v1/sample-agent/runs", data["paths"])
+
+    def test_agent_registry_endpoint(self):
+        status, data = self.request("GET", "/v1/agents")
+        self.assertEqual(status, 200)
+        self.assertTrue(data["agents"])
+        self.assertEqual(data["agents"][0]["id"], "sample-travel-assistant")
 
     def test_swagger_docs_html(self):
         status, content_type, body = self.request_raw("GET", "/docs")
@@ -109,6 +119,15 @@ class ApiTests(unittest.TestCase):
     def test_sample_agent_invalid_scenario_returns_400(self):
         status, data = self.request("POST", "/v1/sample-agent/runs", {
             "scenario": "unknown",
+            "drift_mode": "tool",
+        })
+        self.assertEqual(status, 400)
+        self.assertEqual(data["error"]["code"], "bad_request")
+
+    def test_registered_agent_unknown_agent_returns_400(self):
+        status, data = self.request("POST", "/v1/agent-runs", {
+            "agent_id": "missing-agent",
+            "scenario": "seoul_weekend",
             "drift_mode": "tool",
         })
         self.assertEqual(status, 400)

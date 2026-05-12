@@ -24,19 +24,22 @@ python3 -m http.server 5173
 open http://127.0.0.1:5173
 ```
 
-## 샘플 에이전트 실행
+## 등록 에이전트 실행
 
-화면 왼쪽 `Sample Agent` 영역에서 시나리오와 drift 유형을 선택한 뒤 `Run Sample`을 누르면 백엔드가 번들된 LangGraph 샘플 에이전트를 실행합니다.
+화면 왼쪽 `Registered Agent` 영역에서 등록된 에이전트, 시나리오, drift 유형을 선택한 뒤 `Run Agent`를 누르면 백엔드가 해당 에이전트를 실행합니다.
 
 호출 흐름:
 
 ```text
 Frontend
-  -> POST /v1/sample-agent/runs
-  -> backend/sample_agent 실행
+  -> GET /v1/agents
+  -> POST /v1/agent-runs
+  -> registry.json에 등록된 에이전트 실행
   -> DriftGuard Agent Review
   -> Result 패널 표시
 ```
+
+에이전트 등록 정보는 `backend/agents/registry.json`에 있습니다.
 
 ## 구성
 
