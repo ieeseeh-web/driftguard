@@ -40,11 +40,11 @@
 | AAJ-001 | done | 1 | Agent-as-a-Judge 참고 자료 저장 | `agent/references/`에 논문 요약, PRD, 개발 가이드 저장 |
 | AAJ-002 | done | 1 | Agent-as-a-Judge 구현 계획 문서 작성 | `agent/AGENT_AS_JUDGE_PLAN.md` 작성 |
 | AAJ-003 | done | 1 | PRD/Architecture에 Agent-as-a-Judge 방향 통합 | `agent/PRD.md`, `agent/ARCHITECTURE.md` 업데이트 |
-| AAJ-004 | todo | 2 | AgentReviewPlan 모델 추가 | review type별 deterministic plan 생성 테스트 |
-| AAJ-005 | todo | 2 | JudgeFinding / judge_results 구조 추가 | JSON 결과에 judge별 score, confidence, evidence 포함 |
-| AAJ-006 | todo | 2 | Goal/Instruction/Tool/Memory/Safety judge 모듈 분리 | 기존 결과와 호환되며 judge별 unit test 통과 |
-| AAJ-007 | todo | 3 | EvidenceItem 추출 로직 추가 | execution log/tool call/handoff에서 evidence 추출 |
-| AAJ-008 | todo | 3 | Markdown report에 judge breakdown 추가 | 사람 검토용 보고서에 judge별 판단과 근거 표시 |
+| AAJ-004 | done | 2 | AgentReviewPlan 모델 추가 | review type별 deterministic plan 생성 테스트 |
+| AAJ-005 | done | 2 | JudgeFinding / judge_results 구조 추가 | JSON 결과에 judge별 score, confidence, evidence 포함 |
+| AAJ-006 | done | 2 | Goal/Instruction/Tool/Memory/Safety judge 모듈 분리 | 기존 결과와 호환되며 judge별 unit test 통과 |
+| AAJ-007 | done | 3 | EvidenceItem 추출 로직 추가 | execution log/tool call/handoff에서 evidence 추출 |
+| AAJ-008 | done | 3 | Markdown report에 judge breakdown 추가 | 사람 검토용 보고서에 judge별 판단과 근거 표시 |
 | AAJ-009 | todo | 4 | Optional LLM/hybrid judge adapter 설계 | deterministic 기본값 유지, LLM 판단은 보조 신호로 사용 |
 | AAJ-010 | todo | 4 | Sandbox verifier 설계 | code execution 전 보안 요구사항과 opt-in 정책 문서화 |
 

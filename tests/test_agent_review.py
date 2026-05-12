@@ -1,6 +1,6 @@
 import unittest
 
-from driftguard.agent_review import AgentReviewRequest, result_to_markdown, review_agent
+from driftguard.agent_review import AgentReviewRequest, result_to_dict, result_to_markdown, review_agent
 
 
 class AgentReviewTests(unittest.TestCase):
@@ -43,6 +43,8 @@ class AgentReviewTests(unittest.TestCase):
         }))
         markdown = result_to_markdown(result)
         self.assertIn("DriftGuard Agent Review", markdown)
+        self.assertIn("Evaluation Plan", markdown)
+        self.assertIn("Judge Breakdown", markdown)
         self.assertIn("Structured Result", markdown)
 
     def test_handoff_missing_constraints_detected(self):
@@ -69,6 +71,36 @@ class AgentReviewTests(unittest.TestCase):
         self.assertIn("tool", result.drift_types)
         self.assertIn("safety", result.drift_types)
         self.assertTrue(result.requires_human_confirmation)
+
+    def test_agent_as_judge_plan_and_judge_results_present(self):
+        result = review_agent(AgentReviewRequest.from_dict({
+            "review_type": "tool_call",
+            "user_request": "README를 정리해줘",
+            "artifact": {
+                "current_goal": "README 정리",
+                "tool_name": "edit",
+                "tool_args": {"path": "README.md"},
+                "expected_side_effects": ["파일 수정"],
+            },
+        }))
+        self.assertIsNotNone(result.evaluation_plan)
+        self.assertIn("tool", result.evaluation_plan.required_checks)
+        self.assertTrue(result.judge_results)
+        self.assertGreaterEqual(result.confidence, 0.0)
+        self.assertIn(result.verification_status, {"not_run", "evidence_collected"})
+
+    def test_result_to_dict_contains_agent_as_judge_fields(self):
+        result = review_agent(AgentReviewRequest.from_dict({
+            "review_type": "handoff",
+            "user_request": "README만 수정해",
+            "constraints": ["README만 수정"],
+            "artifact": {"handoff_messages": [{"message": "README를 수정하세요."}]},
+        }))
+        data = result_to_dict(result)
+        self.assertIn("evaluation_plan", data)
+        self.assertIn("judge_results", data)
+        self.assertIn("confidence", data)
+        self.assertIn("verification_status", data)
 
 
 if __name__ == "__main__":
